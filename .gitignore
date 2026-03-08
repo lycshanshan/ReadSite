@@ -1,0 +1,22 @@
+# --- Django 核心忽略 ---
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# --- 虚拟环境 ---
+venv/
+env/
+.env
+
+# --- 媒体文件 (保留文件夹结构，但忽略内容) ---
+media/*
+!media/covers/
+!media/illustrations/
+media/covers/*
+!media/covers/.gitkeep
+media/illustrations/*
+!media/illustrations/.gitkeep

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Let's Read!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; 
+            background-color: #f5f5f5; 
+            color: #333; 
+        }
+        a { text-decoration: none; color: inherit; }
+
+        /* --- 顶部导航栏 --- */
+        .top-bar {
+            background-color: #2c3e50;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .nav-left { flex: 1; display: flex; align-items: center; }
+        .search-box { position: relative; width: 250px; }
+        .search-input {
+            width: 100%;
+            padding: 6px 12px;
+            padding-right: 30px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            background: rgba(255,255,255,0.9);
+            transition: 0.3s;
+        }
+        .search-input:focus {background: white; outline: none; }
+        .search-btn {
+            position: absolute; 
+            right: 8px; top: 50%; 
+            transform: translateY(-50%);
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            color: #666; 
+            font-weight: bold;
+        }
+
+        .nav-center { flex: 1; text-align: center; }
+        .site-title { color: white; font-size: 1.4em; font-weight: 700; letter-spacing: 1px; }
+
+        .nav-right { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 15px; font-size: 0.9em; color: rgba(255,255,255,0.9); }
+        .nav-link { color: white; transition: 0.2s; }
+        .nav-link:hover { color: #f1c40f; }
+        .btn-outline { border: 1px solid rgba(255,255,255,0.6); padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+        .btn-outline:hover { background: rgba(255,255,255,0.1); border-color: white; }
+
+        /* --- 容器与通用样式 --- */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; min-height: 80vh;}
+        
+        .section-header {
+            border-left: 5px solid #2c3e50;
+            padding-left: 15px;
+            margin: 30px 0 20px 0;
+            display: flex;
+            align-items: baseline;
+        }
+        .section-title { font-size: 1.5em; color: #2c3e50; font-weight: 600; margin-right: 10px; }
+        .section-subtitle { color: #7f8c8d; font-size: 0.9em; }
+
+        /* --- 推荐书籍 (卡片) --- */
+        .rec-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+        .rec-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .rec-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+        
+        .rec-cover-wrapper {
+            width: 100%;
+            padding-top: 140%; /* 1:1.4 aspect ratio */
+            position: relative;
+            background: #eee;
+            overflow: hidden;
+        }
+        .rec-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .rec-info { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
+        .rec-title { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; color: #333; }
+        .rec-author { font-size: 0.9em; color: #7f8c8d; }
+        
+        /* --- 全部书籍 (列表) --- */
+        .list-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .list-header, .list-row {
+            display: grid;
+            grid-template-columns: 3fr 2fr 1.5fr 1.5fr;
+            padding: 15px 20px;
+            align-items: center;
+        }
+        .list-header { background: #f8f9fa; font-weight: bold; color: #666; border-bottom: 1px solid #eee; font-size: 0.9em; }
+        .list-row { border-bottom: 1px solid #f0f0f0; transition: background 0.2s; color: #555; font-size: 0.95em; }
+        .list-row:last-child { border-bottom: none; }
+        .list-row:hover { background: #fdfdfd; }
+        .list-title { color: #2c3e50; font-weight: 500; }
+        .list-row:hover .list-title { color: #2980b9; }
+
+        /* --- 分页控件 --- */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+            gap: 10px;
+        }
+        .page-link {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            color: #2c3e50;
+            font-size: 0.9em;
+            transition: 0.2s;
+        }
+        .page-link:hover { background: #eee; }
+        .page-current {
+            padding: 8px 16px;
+            background: #2c3e50;
+            color: white;
+            border: 1px solid #2c3e50;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .page-disabled {
+            padding: 8px 16px;
+            color: #aaa;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            cursor: not-allowed;
+        }
+
+        /* 响应式 */
+        @media (max-width: 900px) {
+            .rec-grid { grid-template-columns: repeat(2, 1fr); }
+            .list-header, .list-row { grid-template-columns: 2fr 1.5fr 1.5fr; } 
+            .list-cell-hide-mobile { display: none; }
+        }
+        @media (max-width: 600px) {
+            .top-bar { padding: 0 15px; height: auto; flex-wrap: wrap; padding-bottom: 10px;}
+            .nav-left { order: 2; width: 100%; margin-top: 10px; justify-content: center;}
+            .search-box { width: 100%; }
+            .search-input:focus { width: 100%; }
+            .nav-center { order: 1; flex: 0 0 auto; }
+            .nav-right { order: 1; flex: 1; }
+            .rec-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
+            .list-header { display: none; }
+            .list-row { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部导航栏 -->
+    <nav class="top-bar">
+        <div class="nav-left">
+            <form action="/" method="get" class="search-box">
+                <input type="text" name="q" class="search-input" placeholder="搜索书名或作者..." value="{{ search_query }}">
+                <button type="submit" class="search-btn">🔍</button>
+            </form>
+        </div>
+
+        <div class="nav-center site-title">
+            Let's Read!
+        </div>
+
+        <div class="nav-right">
+            {% if user.is_authenticated %}
+                <span>你好, <a href="{% url 'profile' %}" class="nav-link" style="font-weight: bold;">{{ user.username }}</a></span>
+                <span style="opacity: 0.5">|</span>
+                <a href="{% url 'my_bookshelf' %}" class="nav-link">我的书架</a>
+                
+                <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-link btn-outline" style="background:transparent; cursor:pointer; font-size: 12px;">退出</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="nav-link btn-outline">登录</a>
+                <a href="{% url 'signup' %}" class="nav-link btn-outline">注册</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+
+        {% if is_search %}
+            <!-- 搜索结果模式 -->
+            <div class="section-header">
+                <span class="section-title">搜索结果</span>
+                <span class="section-subtitle">关键词：{{ search_query }}</span>
+                <a href="{% url 'index' %}" style="margin-left: auto; font-size: 0.9em; color: #3498db;">返回首页</a>
+            </div>
+            <!-- 搜索结果列表 (复用下方列表结构) -->
+            <div class="list-container">
+                <div class="list-header">
+                    <div>书名</div>
+                    <div>作者</div>
+                    <div class="list-cell-hide-mobile">总字数</div>
+                    <div>收录时间</div>
+                </div>
+                {% for book in page_obj %}
+                <a href="{% url 'book_detail' book.id %}" class="list-row" target="_blank">
+                    <div class="list-title">{{ book.title }}</div>
+                    <div>{{ book.author }}</div>
+                    <div class="list-cell-hide-mobile">
+                        {% if book.word_count > 10000 %}
+                            {{ book.word_count|stringformat:"d"|slice:":-4" }} 万字
+                        {% else %}
+                            {{ book.word_count }} 字
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.85em; color: #999;">{{ book.created_at|date:"Y-m-d" }}</div>
+                </a>
+                {% empty %}
+                <div style="padding: 40px; text-align: center; color: #999;">
+                    没有找到相关书籍。
+                </div>
+                {% endfor %}
+            </div>
+
+        {% else %}
+            <!-- 正常首页模式 -->
+
+            <!-- 1. 推荐书籍 -->
+            {% if recommended_books %}
+            <div class="section-header">
+                <span class="section-title">✨ 精选推荐</span>
+                <!-- <span class="section-subtitle">编辑精选好书</span> -->
+            </div>
+
+            <div class="rec-grid">
+                {% for book in recommended_books %}
+                <a href="{% url 'book_detail' book.id %}" class="rec-card" target="_blank">
+                    <div class="rec-cover-wrapper">
+                        {% if book.cover %}
+                            <img src="{{ book.cover.url }}" alt="{{ book.title }}" class="rec-cover">
+                        {% else %}
+                            <div class="rec-cover" style="display:flex; align-items:center; justify-content:center; color:#999; font-size:14px; background: #eee;">
+                                暂无封面
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="rec-info">
+                        <div class="rec-title">{{ book.title }}</div>
+                        <div class="rec-author">{{ book.author }}</div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- 2. 全部书籍列表 (分页) -->
+            <div class="section-header">
+                <span class="section-title">📚 最新收录</span>
+                <!-- <span class="section-subtitle">按入库时间排序</span> -->
+            </div>
+
+            <div class="list-container">
+                <div class="list-header">
+                    <div>书名</div>
+                    <div>作者</div>
+                    <div class="list-cell-hide-mobile">总字数</div>
+                    <div>收录时间</div>
+                </div>
+
+                <!-- 使用 page_obj 遍历 -->
+                {% for book in page_obj %}
+                <a href="{% url 'book_detail' book.id %}" class="list-row" target="_blank">
+                    <div class="list-title">{{ book.title }}</div>
+                    <div>{{ book.author }}</div>
+                    <div class="list-cell-hide-mobile">
+                        {% if book.word_count > 10000 %}
+                            {{ book.word_count|stringformat:"d"|slice:":-4" }}.{{ book.word_count|stringformat:"d"|slice:"-4:-3" }} 万字
+                        {% else %}
+                            {{ book.word_count }} 字
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.85em; color: #999;">{{ book.created_at|date:"Y-m-d" }}</div>
+                </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- 分页控件 (搜索模式和普通模式通用) -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">&laquo; 上一页</a>
+            {% else %}
+                <span class="page-disabled">&laquo; 上一页</span>
+            {% endif %}
+
+            <span class="page-current">
+                第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="page-link">下一页 &raquo;</a>
+            {% else %}
+                <span class="page-disabled">下一页 &raquo;</span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+</body>
+</html>

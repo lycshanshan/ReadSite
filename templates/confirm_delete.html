@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>确认注销账号</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f5f5f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 80vh; 
+        }
+        .card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            max-width: 400px; 
+            text-align: center; 
+            border-top: 5px solid #e74c3c; 
+        }
+        .btn { padding: 10px 20px; border-radius: 5px; cursor: pointer; border: none; font-size: 16px; margin: 0 10px; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-cancel { background: #ddd; color: #333; text-decoration: none; display: inline-block;}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>⚠ 危险操作</h2>
+        <p>您确定要注销（永久删除）您的账号吗？</p>
+        <p style="color: #666; font-size: 0.9em;">所有的阅读进度都将丢失，且无法恢复。</p>
+        <br>
+        <form method="post">
+            {% csrf_token %}
+            <a href="{% url 'profile' %}" class="btn btn-cancel">取消</a>
+            <button type="submit" class="btn btn-danger">确认删除</button>
+        </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书籍详情 - {{ book.title }}</title>
+    <style>
+        /* 继承主页样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        /* 顶部导航栏 */
+        .top-bar {
+            background-color: #2c3e50;
+            padding: 10px 30px 12px 30px;
+        }
+
+        .home-link {
+            color: white;
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        /* 书籍信息区 */
+        .book-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .book-cover {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 3/4;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .book-info {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .book-title {
+            font-size: 2.2em;
+            color: #2c3e50;
+            font-weight: 700;
+        }
+
+        .book-description {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            flex-grow: 1;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .read-button {
+            align-self: start;
+            padding: 12px 35px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .read-button:hover {
+            background: #34495e;
+        }
+
+        /* 章节列表容器 */
+        .chapter-list {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* 每一卷的包裹容器 */
+        .volume-group {
+            margin-bottom: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            overflow: hidden; /* 保持圆角 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 分卷标题样式 */
+        .volume-header {
+            background-color: #dfe6e9;
+            color: #2d3436;
+            padding: 12px 25px;
+            font-size: 1.25em;
+            font-weight: 700;
+            cursor: pointer; /* 变为手型指针 */
+            user-select: none; /* 防止双击选中文本 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid #2c3e50;
+            transition: background-color 0.2s;
+        }
+        .volume-header:hover {
+            background-color: #d1d8dd;
+        }
+        /* 纯CSS制作箭头图标 */
+        .volume-header::after {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-right: 2px solid #2d3436;
+            border-bottom: 2px solid #2d3436;
+            transform: rotate(45deg); /* 向下箭头 */
+            transition: transform 0.3s ease;
+            margin-left: 10px;
+        }
+        /* 折叠时的箭头状态 (向左/右) */
+        .volume-header.is-collapsed::after {
+            transform: rotate(-45deg); /* 向右箭头 (或者 -135deg 向上) */
+        }
+        /* --- 新增：章节 Grid 容器 (原 Grid 样式移到这里) --- */
+        .volume-chapters {
+            padding: 20px;
+            display: grid; /* Grid 布局 */
+            grid-template-columns: repeat(3, 1fr); /* 电脑端 3 列 */
+            gap: 15px;
+            
+            /* 展开/收起动画相关的属性 */
+            display: grid; 
+        }
+        /* 隐藏状态 */
+        .volume-chapters.collapsed {
+            display: none;
+        }
+
+        /* 章节块样式 */
+        .chapter-item {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 6px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            align-items: center;
+            border: 1px solid #eee;
+        }
+        .chapter-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            background: white;
+            border-color: #ddd;
+        }
+        .chapter-link {
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 500;
+            width: 100%;
+        }
+
+
+        .lgout_btn {
+            padding: 5px 10px; 
+            background: transparent; 
+            border: 1px solid white; 
+            color: white;
+            border-radius: 4px; 
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .lgout_btn:hover {
+            text-decoration: underline;
+        }
+
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.4); 
+            backdrop-filter: blur(2px); /* 增加磨砂效果 */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-actions {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; 
+            gap: 20px;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn-confirm, .btn-cancel { 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 14px;
+        }
+
+        .btn-cancel { background-color: #f1f2f6; color: #666; }
+        .btn-confirm { background-color: #2c3e50; color: white; }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .book-container {
+                grid-template-columns: 1fr;
+            }
+
+            .book-title {
+                font-size: 1.8em;
+            }
+
+            .book-cover {
+                max-width: 300px;
+                margin: 0 auto;
+            }
+            /* 平板/手机端改为单列 */
+            .volume-chapters {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .top-bar {
+                padding: 10px 15px;
+            }
+
+            .book-description {
+                padding: 15px;
+            }
+
+            .chapter-item {
+                padding: 12px 20px;
+            }
+
+            /* 平板/手机端改为单列 */
+            .volume-chapters {
+                grid-template-columns: 1fr;
+            }
+
+            /* 手机端分卷标题文字稍小 */
+            .volume-header {
+                font-size: 1.1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <nav class="top-bar">
+        <a href="/" class="home-link">Let's Read!</a>
+        <!-- 右上角的用户状态区 -->
+        <div style="position: absolute; top: 10px; right: 20px; font-size: 0.9em;">
+            {% if user.is_authenticated %}
+                <span style="color:white;">
+                    你好, 
+                    <a href="{% url 'profile' %}" style="color: white; text-decoration: none; font-weight: bold;">
+                        {{ user.username }}
+                    </a>
+                </span>
+                <span style="margin: 0 10px; color:white;">|</span>
+                <!-- Django 安全要求必须用 form post 提交来注销  -->
+                <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="lgout_btn">退出</button>
+                </form>
+                <a href="{% url 'my_bookshelf' %}" class="lgout_btn" style="margin-left: 5px; display: inline-block;">
+                    我的书架
+                </a>
+            {% else %}
+                <a href="{% url 'login' %}" class="lgout_btn" style="margin-left: 5px; display: inline-block;">登录</a>
+                <a href="{% url 'signup' %}" class="lgout_btn" style="margin-left: 5px; display: inline-block;">注册</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- 书籍信息 -->
+    <div class="book-container">
+        <div class="book-cover-area">
+             {% if book.cover %}
+                <img src="{{ book.cover.url }}" alt="{{ book.title }}" class="book-cover">
+            {% else %}
+                <div class="book-cover" style="background: #ddd; display: flex; align-items: center; justify-content: center;">暂无封面</div>
+            {% endif %}
+        </div>
+        
+        <div class="book-info">
+            <div style="display: flex; align-items: baseline; gap: 15px; flex-wrap: wrap;">
+                <h1 class="book-title">{{ book.title }}</h1>
+                <span style="color: #666; font-size: 0.9em;">
+                    {{ book.author }}
+                </span>
+            </div>
+            <div class="book-description">
+                <!-- linebreaks 过滤器会自动把换行符变成 <p> 或 <br> -->
+                {{ book.description|linebreaks }}
+            </div>
+
+            <!-- 按钮组容器 -->
+            <div class="action-area" style="margin-top: auto;">
+                <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                    <!-- 1. 阅读按钮 (左) -->
+                    {% if progress %}
+                        <button class="read-button" onclick="location.href='{% url 'read_chapter' progress.chapter.id %}'">
+                            继续阅读
+                        </button>
+                    {% else %}
+                        {% if first_chapter %}
+                            <button class="read-button"  onclick="location.href='{% url 'read_chapter' first_chapter.id %}'">
+                                开始阅读
+                            </button> 
+                        {% else %}
+                            <button class="read-button" disabled>暂无章节</button>
+                        {% endif %}
+                    {% endif %}
+                    <!-- 2. 书架按钮 (右) -->
+                    {% if user.is_authenticated %}
+                        <a href="javascript:void(0);" 
+                           id="shelf-btn-{{ book.id }}" 
+                           onclick="toggleShelf('{{ book.id }}')" 
+                           class="read-button" 
+                           style="background: {% if in_bookshelf %}#e74c3c{% else %}#27ae60{% endif %}; text-decoration:none;">
+                           {% if in_bookshelf %}移出书架{% else %}加入书架{% endif %}
+                        </a>
+                        <button class="read-button" style="background-color: #8e44ad;" onclick="checkDownload()">
+                            TXT下载
+                        </button>
+                    {% else %}
+                        <button class="read-button" disabled style="background:#95a5a6; cursor: not-allowed;" title="请先登录">加入书架</button>
+                    {% endif %}
+                </div>
+
+                <!-- 3. 进度提示 (下) -->
+                {% if progress %}
+                <div style="color: #666; font-size: 0.9em;">
+                    上次读到：{{ progress.chapter.title }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 章节列表 -->
+    <div class="chapter-list">
+        {% for group in grouped_chapters %}
+        <div class="volume-group">
+            <!-- 卷标题：如果卷名为空，显示“正文”或者“目录” -->
+            <div class="volume-header" onclick="toggleVolume(this)">
+                {{ group.volume_name|default:"正文" }}
+            </div>
+            
+            <div class="volume-chapters">
+                {% for chapter in group.chapters %}
+                <div class="chapter-item">
+                    <!-- 链接格式：/read/章节ID/ -->
+                    <a href="{% url 'read_chapter' chapter.id %}" class="chapter-link">
+                        {{ chapter.title }}
+                    </a>
+                </div>
+                {% endfor %}
+
+                {% if group.has_illustration %}
+                <div class="chapter-item" style="border-left: 3px solid #e67e22; background: #fffdf9;">
+                    <!-- volume_name|default:"_default_" 处理空卷名 -->
+                    <a href="{% url 'view_illustration' book.id group.volume_name|default:'_default_' %}" class="chapter-link" style="color: #d35400; font-weight: bold;">
+                        {{ group.volume_name|default:"本卷" }} 插图
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+            <div style="text-align: center; padding: 20px;">暂无章节信息</div>
+        {% endfor %}
+    </div>
+
+    <!-- 下载确认弹窗 -->
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #2c3e50;">下载确认</h3>
+            <div style="text-align: left; margin: 20px 0; line-height: 1.8;">
+                <p>书籍：<strong>{{ book.title }}</strong></p>
+                <p>字数：<span id="dl-word-count">加载中...</span></p>
+                {% if book.illustration_count > 0 %}
+                <p id="row-ill-count" style="display: none;">插图：<span id="dl-ill-count">0</span> 张</p>
+                {% endif %}
+                <p>所需积分：<strong id="dl-price" style="color: #e74c3c; font-size: 1.2em;">0</strong></p>
+                <p style="font-size: 0.9em; color: #666;">您的当前积分：<span id="dl-user-point">--</span></p>
+            </div>
+
+            <!-- 用 Form 提交下载请求 -->
+            <form id="downloadForm" action="{% url 'book_download' book.id %}" method="post" class="modal-actions">
+                {% csrf_token %}
+
+                {% if book.illustration_count > 0 %}
+                <div id="download-options" style="display: flex; justify-content: center; gap: 30px;">
+                    <label style="cursor: pointer; display: flex; align-items: center;">
+                        <input type="checkbox" name="need_text" id="chk-text" checked onchange="updateDownloadPrice()">
+                        <span style="margin-left: 5px;">正文</span>
+                    </label>
+                    
+                    <label id="lbl-img" style="cursor: pointer; display: flex; align-items: center;">
+                        <input type="checkbox" name="need_img" id="chk-img" onchange="updateDownloadPrice()">
+                        <span style="margin-left: 5px;">插图</span>
+                    </label>
+                </div>
+                {% endif %}
+                <div>
+                    <button type="button" class="btn-cancel" onclick="closeDownloadModal()">取消</button>
+                    <button type="submit" id="btn-dl-submit" class="btn-confirm" style="background-color: #8e44ad;">确认支付并下载</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+    function toggleVolume(headerElement) {
+        // 1. 切换箭头方向样式
+        headerElement.classList.toggle('is-collapsed');
+        
+        // 2. 找到紧接着标题的章节列表容器
+        const content = headerElement.nextElementSibling;
+        
+        // 3. 切换显示/隐藏
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+        } else {
+            content.classList.add('collapsed');
+        }
+    }
+
+    const dlModal = document.getElementById('downloadModal');
+
+    {% if book.illustration_count > 0 %}
+    // 定义全局变量存储价格信息
+    let g_textPrice = 0;
+    let g_imgPrice = 0;
+    let g_userPoint = 0;
+    let g_illCount = 0;
+    function checkDownload() {
+        // 从后台获取价格
+        fetch("{% url 'book_download' book.id %}")
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                // 存储数据到全局变量
+                g_textPrice = data.text_price;
+                g_imgPrice = data.img_price;
+                g_userPoint = data.user_point;
+                g_illCount = data.illustration_count;
+
+                // 填充基础文本信息
+                document.getElementById('dl-word-count').innerText = (data.word_count / 10000).toFixed(1) + " 万字";
+                document.getElementById('dl-user-point').innerText = data.user_point;
+                
+                // 处理插图相关的显示逻辑
+                const illRow = document.getElementById('row-ill-count');
+                const illLabel = document.getElementById('lbl-img');
+                const illCheckbox = document.getElementById('chk-img');
+                const illSpan = document.getElementById('dl-ill-count');
+
+                illSpan.innerText = g_illCount;
+
+                if (g_illCount > 0) {
+                    illRow.style.display = 'block'; // 显示插图数量行
+                    illLabel.style.display = 'flex'; // 显示插图复选框
+                    illCheckbox.disabled = false;
+                } else {
+                    illRow.style.display = 'none';
+                    illLabel.style.display = 'none';
+                    illCheckbox.checked = false; // 没图肯定不选
+                    illCheckbox.disabled = true;
+                }
+
+                // 初始化勾选状态（默认勾选正文）
+                document.getElementById('chk-text').checked = true;
+                if(g_illCount > 0) {
+                    // 默认不勾选插图，或者你可以根据需求默认全选
+                    document.getElementById('chk-img').checked = false; 
+                }
+
+                // 计算并更新 UI
+                updateDownloadPrice();
+                
+                // 显示弹窗
+                dlModal.style.display = 'flex';
+            }
+        });
+    }
+
+    function updateDownloadPrice() {
+        const chkText = document.getElementById('chk-text');
+        const chkImg = document.getElementById('chk-img');
+        const btnSubmit = document.getElementById('btn-dl-submit');
+        const priceDisplay = document.getElementById('dl-price');
+
+        let totalPrice = 0;
+        let isAnyChecked = false;
+
+        if (chkText.checked) {
+            totalPrice += g_textPrice;
+            isAnyChecked = true;
+        }
+        if (chkImg.checked) {
+            totalPrice += g_imgPrice;
+            isAnyChecked = true;
+        }
+
+        // 更新价格显示
+        priceDisplay.innerText = totalPrice;
+
+        // 按钮状态逻辑
+        // 1. 如果都没选 -> 灰色不可点
+        // 2. 如果积分不足 -> 灰色不可点 + 提示文字
+        // 3. 正常 -> 紫色可点
+
+        if (!isAnyChecked) {
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "请选择内容";
+            btnSubmit.style.backgroundColor = "#95a5a6";
+            btnSubmit.style.cursor = "not-allowed";
+        } else if (g_userPoint < totalPrice) {
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "积分不足";
+            btnSubmit.style.backgroundColor = "#95a5a6";
+            btnSubmit.style.cursor = "not-allowed";
+        } else {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = "确认支付并下载";
+            btnSubmit.style.backgroundColor = "#8e44ad";
+            btnSubmit.style.cursor = "pointer";
+        }
+    }
+    {% else %}
+    function checkDownload() {
+        // 从后台获取价格
+        fetch("{% url 'book_download' book.id %}")
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                // 填充数据
+                document.getElementById('dl-word-count').innerText = (data.word_count / 10000).toFixed(1) + " 万字";
+                document.getElementById('dl-price').innerText = data.text_price;
+                document.getElementById('dl-user-point').innerText = data.user_point;
+                
+                // 检查积分够不够
+                const submitBtn = document.querySelector('#downloadForm button[type="submit"]');
+                if (data.user_point < data.price) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "积分不足";
+                    submitBtn.style.backgroundColor = "#95a5a6";
+                    submitBtn.style.cursor = "not-allowed";
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "确认支付并下载";
+                    submitBtn.style.backgroundColor = "#8e44ad";
+                    submitBtn.style.cursor = "pointer";
+                }
+                
+                // 显示弹窗
+                dlModal.style.display = 'flex';
+            }
+        });
+    }
+    {% endif %}
+
+    function closeDownloadModal() {
+        dlModal.style.display = 'none';
+    }
+
+    // 下载表单提交后，自动关闭弹窗
+    document.getElementById('downloadForm').onsubmit = function() {
+        setTimeout(closeDownloadModal, 1000); // 1秒后关闭
+    };
+
+    function toggleShelf(bookId) {
+        // 构建 URL
+        const url = `/bookshelf/toggle/${bookId}/`; 
+
+        fetch(url, {
+            method: 'POST', 
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}', // 必须带 CSRF
+                'X-Requested-With': 'XMLHttpRequest', // 标记为 AJAX
+                'Content-Type': 'application/json'
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const btn = document.getElementById(`shelf-btn-${bookId}`);
+                
+                if (data.in_bookshelf) {
+                    // 变成了“已加入”状态
+                    btn.style.backgroundColor = '#e74c3c'; // 红色
+                    btn.innerText = '移出书架';
+                } else {
+                    // 变成了“未加入”状态
+                    btn.style.backgroundColor = '#27ae60'; // 绿色
+                    btn.innerText = '加入书架';
+                }
+                
+                // 可选：提示
+                // alert(data.msg);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+</body>
+</html>

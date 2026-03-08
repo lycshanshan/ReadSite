@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>个人中心</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --danger-color: #e74c3c;
+            --text-main: #333;
+            --text-sub: #7f8c8d;
+            --bg-gray: #f8f9fa;
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f5f5f5; 
+            display: flex; 
+            justify-content: center; 
+            padding-top: 50px; 
+        }
+        .card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 400px; 
+        }
+        h2 { 
+            border-bottom: 2px solid #eee; 
+            padding-bottom: 10px; 
+            color: #2c3e50; 
+        }
+        .info-group {
+            margin-bottom: 30px;
+            padding: 10px 0;
+        }
+
+        .info-row { 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 17px;
+            line-height: 1.6;
+        }
+
+        .label { 
+            color: var(--text-sub); 
+            font-weight: 500;
+        }
+
+        .value {
+            font-weight: 600;
+            color: var(--text-main);
+            text-align: right;
+        }
+
+        .btn-group { 
+            margin-top: 40px; 
+            display: grid; 
+            gap: 15px; 
+        }
+        
+        .btn-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .btn { 
+            border: none;
+            border-radius: 5px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .btn-checkin {
+            background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(243, 156, 18, 0.3);
+        }
+        .btn-checkin:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 10px rgba(243, 156, 18, 0.4);
+        }
+
+        .grid-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-secondary { 
+            background: #ecf0f1; 
+            color: var(--primary-color); 
+        }
+        .btn-secondary:hover { 
+            background: #dfe6e9; 
+            color: #000;
+        }
+
+        .btn-outline-danger { 
+            background: white; 
+            color: var(--danger-color); 
+            border: 1px solid rgba(231, 76, 60, 0.3); 
+        }
+        .btn-outline-danger:hover { 
+            border-color: var(--danger-color);
+            background: #fff5f5; 
+        }
+
+        .link-back { 
+            margin-top: 25px; 
+            text-align: center; 
+            display: block; 
+            font-size: 14px;
+            color: #999;
+            text-decoration: none;
+        }
+        .link-back:hover { color: #666; text-decoration: underline; }
+
+        /* --- 弹窗样式 --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0,0,0,0.4); 
+            backdrop-filter: blur(2px); /* 磨砂效果 */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-actions {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn-close, .btn-confirm-delete, .btn-cancel { 
+            padding: 10px 20px; 
+            border-radius: 6px; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 14px;
+        }
+
+        .btn-close { background-color: var(--primary-color); color: white; }
+        .btn-cancel { background-color: #f1f2f6; color: #666; }
+        .btn-confirm-delete { background-color: var(--danger-color); color: white; }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(-20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        @media (max-width: 480px) {
+            .card { 
+                max-width: 350px; 
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>个人中心</h2>
+        
+        <div class="info-group">
+            <div class="info-row">
+                <span class="label">用户名</span> 
+                <span class="value">{{ user.username }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">注册时间</span> 
+                <span class="value">{{ user.date_joined|date:"Y-m-d" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">当前积分</span> 
+                <span class="value" id="point-display" style="color: #e67e22;">{{ user_points.point }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">会员等级</span> 
+                <span class="value" id="level-display" style="color: #2980b9;">
+                    {{ user_points.get_user_level_display }} <span style="font-size:0.8em; color:#999; font-weight:400;">({{ user_points.exp }}/{{ user_points.next_level_exp }})</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="btn-section">
+            <!-- 签到 -->
+            <button type="button" class="btn btn-checkin" onclick="doCheckIn()">
+                🎁 每日签到领积分
+            </button>
+
+            <!-- 常用功能 -->
+            <div class="grid-row">
+                <a href="{% url 'my_bookshelf' %}" class="btn btn-secondary">我的书架</a>
+                <!-- 修改密码 -->
+                <a href="{% url 'password_change' %}" class="btn btn-secondary">修改密码</a>
+            </div>
+            
+            <!-- 账户管理 (红色警示) -->
+            <div class="grid-row" style="margin-top: 5px;">
+                <!-- 退出登录 (用form包裹以支持POST，CSS设为flex以填满格子) -->
+                <form action="{% url 'logout' %}" method="post" style="width: 100%; display: flex;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger">退出登录</button>
+                </form>
+
+                <button type="button" class="btn btn-outline-danger" onclick="openDeleteModal()">注销账号</button>
+            </div>
+        </div>
+
+        <a href="{% url 'index' %}" class="link-back">返回首页</a>
+    </div>
+
+    <div id="msgModal" class="modal">
+        <div class="modal-content">
+            <h3 id="msgTitle" style="color: #2c3e50; margin-bottom: 15px;">提示</h3>
+            <p id="msgContent" style="font-size: 1.1em; color: #555;">内容</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-close" onclick="closeMsgModal()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal">
+        <!-- event.stopPropagation() 防止点击弹窗内部时关闭弹窗 -->
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 style="border:none; color: #c0392b;">⚠ 危险操作</h2>
+            <p>您确定要注销您的账号吗？</p>
+            <p style="color: #666; font-size: 0.9em;">阅读进度、书架、积分、会员等级都将丢失，且无法恢复。</p>
+            
+            <!-- 真正的删除表单 -->
+            <form action="{% url 'delete_account' %}" method="post" class="modal-actions">
+                {% csrf_token %}
+                <!-- 取消按钮，只是关闭弹窗 -->
+                <button type="button" class="btn-cancel" onclick="closeDeleteModal()">取消</button>
+                <!-- 确认按钮，提交表单 -->
+                <button type="submit" class="btn-confirm-delete">确认注销</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 获取弹窗元素
+        const msgModal = document.getElementById('msgModal');
+        const deleteModal = document.getElementById('deleteModal');
+
+        function doCheckIn() {
+            const url = "{% url 'checkin' %}"; 
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}', // 必须带 CSRF Token
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    // 弹窗提示成功
+                    showMsg('🎉 签到成功', data.msg);
+                    // 实时更新页面显示的数值，无需刷新
+                    document.getElementById('point-display').textContent = data.current_point;
+                    document.getElementById('level-display').textContent = data.current_level_str;
+                } else {
+                    // 弹窗提示失败
+                    showMsg('提示', data.msg);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMsg('错误', '网络请求失败，请稍后重试');
+            });
+        }
+
+        function showMsg(title, content) {
+            document.getElementById('msgTitle').innerText = title;
+            document.getElementById('msgContent').innerText = content;
+            msgModal.style.display = 'flex';
+        }
+        function closeMsgModal() { msgModal.style.display = 'none'; }
+
+        function openDeleteModal() { deleteModal.style.display = 'flex'; }
+        function closeDeleteModal() { deleteModal.style.display = 'none'; }
+
+        // 点击背景关闭
+        window.onclick = function(event) {
+            if (event.target == msgModal) closeMsgModal();
+            if (event.target == deleteModal) closeDeleteModal();
+        }
+    </script>
+</body>
+</html>
