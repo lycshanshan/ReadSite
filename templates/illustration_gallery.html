@@ -6,45 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ book.title }} - {{ volume_name }} 插图</title>
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
-    <style>
-        /* 复用阅读页样式 */
-        body { padding-bottom: 80px; }
-        
-        .gallery-container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 10px;
-            text-align: center;
-        }
-        
-        .gallery-item {
-            margin-bottom: 30px;
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .gallery-image {
-            width: 100%;
-            height: auto;
-            border-radius: 4px;
-            display: block;
-        }
-        
-        .image-caption {
-            margin-top: 10px;
-            color: #666;
-            font-size: 0.9em;
-        }
-        .footer-button {
-            padding: 8px 25px; background: #2c3e50; color: white; border: none; border-radius: 20px; cursor: pointer; text-decoration: none;
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/illustration_gallery.css' %}">
 </head>
 <body>
     <header class="chapter-header">
-        <!-- 点击书名返回目录页 -->
         <a href="{% url 'book_detail' book.id %}" class="book-title">{{ book.title }}</a>
     </header>
 
@@ -59,11 +24,8 @@
         {% endfor %}
     </div>
 
-    <!-- 底部导航 -->
     <footer class="chapter-footer">
-        <!-- 目录按钮 -->
         <button class="footer-button" onclick="location.href='{% url 'book_detail' book.id %}'">目录</button>
-        
         {% if user.is_authenticated %}
             <button class="footer-button" onclick="location.href='{% url 'my_bookshelf' %}'">书架</button>
         {% endif %}

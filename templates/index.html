@@ -6,122 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Let's Read!</title>
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
-    <style>
-        /* --- 容器与通用样式 --- */
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; min-height: 80vh;}
-        
-        .section-header {
-            border-left: 5px solid #2c3e50;
-            padding-left: 15px;
-            margin: 30px 0 20px 0;
-            display: flex;
-            align-items: baseline;
-        }
-        .section-title { font-size: 1.5em; color: #2c3e50; font-weight: 600; margin-right: 10px; }
-        .section-subtitle { color: #7f8c8d; font-size: 0.9em; }
-
-        /* --- 推荐书籍 (卡片) --- */
-        .rec-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 25px;
-            margin-bottom: 50px;
-        }
-        .rec-card {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-        .rec-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
-        
-        .rec-cover-wrapper {
-            width: 100%;
-            padding-top: 140%; /* 1:1.4 aspect ratio */
-            position: relative;
-            background: #eee;
-            overflow: hidden;
-        }
-        .rec-cover { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        .rec-info { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
-        .rec-title { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; color: #333; }
-        .rec-author { font-size: 0.9em; color: #7f8c8d; }
-        
-        /* --- 全部书籍 (列表) --- */
-        .list-container {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        .list-header, .list-row {
-            display: grid;
-            grid-template-columns: 3fr 2fr 1.5fr 1.5fr;
-            padding: 15px 20px;
-            align-items: center;
-        }
-        .list-header { background: #f8f9fa; font-weight: bold; color: #666; border-bottom: 1px solid #eee; font-size: 0.9em; }
-        .list-row { border-bottom: 1px solid #f0f0f0; transition: background 0.2s; color: #555; font-size: 0.95em; }
-        .list-row:last-child { border-bottom: none; }
-        .list-row:hover { background: #fdfdfd; }
-        .list-title { color: #2c3e50; font-weight: 500; }
-        .list-row:hover .list-title { color: #2980b9; }
-
-        /* --- 分页控件 --- */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 30px;
-            gap: 10px;
-        }
-        .page-link {
-            padding: 8px 16px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            color: #2c3e50;
-            font-size: 0.9em;
-            transition: 0.2s;
-        }
-        .page-link:hover { background: #eee; }
-        .page-current {
-            padding: 8px 16px;
-            background: #2c3e50;
-            color: white;
-            border: 1px solid #2c3e50;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        .page-disabled {
-            padding: 8px 16px;
-            color: #aaa;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            cursor: not-allowed;
-        }
-
-        /* 响应式 */
-        @media (max-width: 900px) {
-            .rec-grid { grid-template-columns: repeat(2, 1fr); }
-            .list-header, .list-row { grid-template-columns: 2fr 1.5fr 1.5fr; } 
-            .list-cell-hide-mobile { display: none; }
-        }
-        @media (max-width: 600px) {
-            .rec-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; }
-            .list-header { display: none; }
-            .list-row { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 15px; }
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
 </head>
 <body>
-
-    <!-- 顶部导航栏 -->
     <nav class="top-bar">
         <div class="nav-left">
             <form action="/" method="get" class="search-box">
@@ -152,7 +39,6 @@
     </nav>
 
     <div class="container">
-
         {% if is_search %}
             <!-- 搜索结果模式 -->
             <div class="section-header">
@@ -160,7 +46,6 @@
                 <span class="section-subtitle">关键词：{{ search_query }}</span>
                 <a href="{% url 'index' %}" style="margin-left: auto; font-size: 0.9em; color: #3498db;">返回首页</a>
             </div>
-            <!-- 搜索结果列表 (复用下方列表结构) -->
             <div class="list-container">
                 <div class="list-header">
                     <div>书名</div>
@@ -190,8 +75,6 @@
 
         {% else %}
             <!-- 正常首页模式 -->
-
-            <!-- 1. 推荐书籍 -->
             {% if recommended_books %}
             <div class="section-header">
                 <span class="section-title">✨ 精选推荐</span>
@@ -219,12 +102,10 @@
             </div>
             {% endif %}
 
-            <!-- 2. 全部书籍列表 (分页) -->
             <div class="section-header">
                 <span class="section-title">📚 最新收录</span>
                 <!-- <span class="section-subtitle">按入库时间排序</span> -->
             </div>
-
             <div class="list-container">
                 <div class="list-header">
                     <div>书名</div>
@@ -232,8 +113,6 @@
                     <div class="list-cell-hide-mobile">总字数</div>
                     <div>收录时间</div>
                 </div>
-
-                <!-- 使用 page_obj 遍历 -->
                 {% for book in page_obj %}
                 <a href="{% url 'book_detail' book.id %}" class="list-row" target="_blank">
                     <div class="list-title">{{ book.title }}</div>
@@ -251,7 +130,6 @@
             </div>
         {% endif %}
 
-        <!-- 分页控件 (搜索模式和普通模式通用) -->
         {% if page_obj.has_other_pages %}
         <div class="pagination">
             {% if page_obj.has_previous %}
@@ -271,8 +149,6 @@
             {% endif %}
         </div>
         {% endif %}
-
     </div>
-
 </body>
 </html>

@@ -6,103 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的书架</title>
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
-    <style>
-        a { text-decoration: none; color: inherit; }
-
-        /* --- 书架网格 --- */
-        .shelf-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 电脑端 3 列 */
-            gap: 20px;
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        /* 卡片样式 */
-        .shelf-card {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            display: flex; /* Flex 布局：左图右文 */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            height: 180px; /* 固定高度 */
-        }
-        
-        .card-cover {
-            width: 120px;
-            height: 100%;
-            object-fit: cover;
-            flex-shrink: 0; 
-            background: #eee;
-        }
-
-        .card-info {
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between; 
-            flex-grow: 1;
-            min-width: 0; 
-        }
-
-        .card-title { font-size: 1.1em; font-weight: bold; margin-bottom: 5px; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-author { font-size: 0.9em; color: #7f8c8d; margin-bottom: 5px; }
-        .card-progress { font-size: 0.85em; color: #e67e22; margin-bottom: 10px; }
-
-        /* 书签网格 */
-        .mark-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr); /* 电脑端 6 列 */
-            gap: 20px;
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .mark-card {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            display: flex;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            height: 210px;
-        }
-
-        .btn-row { display: flex; gap: 10px; }
-        
-        .btn-sm {
-            flex: 1;
-            padding: 6px 0;
-            text-align: center;
-            border-radius: 4px;
-            font-size: 0.9em;
-            text-decoration: none;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .btn-read { background-color: #2c3e50; }
-        .btn-read:hover { background-color: #34495e; }
-        .btn-remove { background-color: #e74c3c; }
-        .btn-remove:hover { background-color: #c0392b; }
-
-        @media (max-width: 900px) {
-            .shelf-grid { grid-template-columns: 2fr; } 
-            .mark-grid { grid-template-columns: 3fr; }
-        }
-        @media (max-width: 600px) {
-            .shelf-grid { grid-template-columns: 1fr; } 
-            .mark-grid { grid-template-columns: 2fr; }
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/bookshelf.css' %}">
 </head>
 <body>
-    <!-- 1. 顶部导航栏 -->
     <nav class="top-bar">
-        <!-- 左侧：搜索 (提交到当前页面) -->
         <div class="nav-left">
             <form action="{% url 'my_bookshelf' %}" method="get" class="search-box">
                 <input type="text" name="q" class="search-input" placeholder="在书架中搜索..." value="{{ search_query }}">
@@ -110,12 +17,10 @@
             </form>
         </div>
 
-        <!-- 中间：标题 -->
         <div class="nav-center">
             <a href="{% url 'index' %}" class="site-title">Let's Read!</a>
         </div>
 
-        <!-- 右侧：用户栏 -->
         <div class="nav-right">
             <span>你好, <a href="{% url 'profile' %}" class="nav-link" style="font-weight: bold;">{{ user.username }}</a></span>
             <span style="opacity: 0.5">|</span>
@@ -134,7 +39,6 @@
     </div>
     {% endif %}
 
-    <!-- 书架部分 -->
     <div style="max-width: 1200px; margin: 30px auto; padding: 0 20px;">
         <h2 style="color: #2c3e50; border-left: 5px solid #2c3e50; padding-left: 15px;">我的书架</h2>
     </div>
@@ -142,7 +46,6 @@
     <div class="shelf-grid">
         {% for item in books %}
         <div class="shelf-card" id="card-book-{{ item.book.id }}">
-            <!-- 封面 -->
             <a href="{% url 'book_detail' item.book.id %}" target="_blank">
                 {% if item.book.cover %}
                 <img src="{{ item.book.cover.url }}" class="card-cover">
@@ -151,7 +54,6 @@
                 {% endif %}
             </a>
 
-            <!-- 右侧信息 -->
             <div class="card-info">
                 <div>
                     <div class="card-title">{{ item.book.title }}</div>
@@ -166,14 +68,12 @@
                 </div>
 
                 <div class="btn-row">
-                    <!-- 阅读按钮 -->
                     {% if item.progress %}
                     <a href="{% url 'read_chapter' item.progress.chapter.id %}" class="btn-sm btn-read" target="_blank">继续阅读</a>
                     {% else %}
                     <a href="{% url 'book_detail' item.book.id %}" class="btn-sm btn-read" target="_blank">开始阅读</a>
                     {% endif %}
 
-                    <!-- 移出按钮 -->
                     <a href="javascript:void(0);" 
                        onclick="removeBookshelf('{{ item.book.id }}')" 
                        class="btn-sm btn-remove">
@@ -195,7 +95,6 @@
         {% endfor %}
     </div>
 
-    <!-- 书签部分 (仅当有书签时才显示) -->
     {% if marks %}
     <hr style="max-width: 1200px; margin: 40px auto; border: 0; border-top: 1px solid #ddd;">
 
@@ -238,14 +137,10 @@
         </div>
         {% endfor %}
     </div>
-    {% elif search_query and not books %}
-        <!-- 如果是搜索模式，并且书架和书签都没搜到 -->
-        <!-- 已经在 books empty 里显示了，这里不需要额外处理，或者可以显示“未找到匹配书签” -->
     {% endif %}
 
     <script>
         function removeBookshelf(bookId) {
-            // if(!confirm("确定移出书架吗？")) return;
             const url = `/bookshelf/toggle/${bookId}/`; 
             fetch(url, {
                 method: 'POST', 
@@ -254,7 +149,6 @@
                 if (data.status === 'success' && !data.in_bookshelf) {
                     const card = document.getElementById(`card-book-${bookId}`);
                     if (card) {
-                        // 淡出动画
                         card.style.opacity = '0';
                         card.style.transform = 'scale(0.9)';
                         setTimeout(() => card.remove(), 300);
@@ -264,7 +158,6 @@
         }
 
         function removeBookmark(chapterId) {
-            // if(!confirm("确定删除书签吗？")) return;
             const url = `/bookmark/toggle/${chapterId}/`; 
             fetch(url, {
                 method: 'POST', 
@@ -273,7 +166,6 @@
                 if (data.status === 'success' && !data.in_bookmark) {
                     const card = document.getElementById(`card-chapter-${chapterId}`);
                     if (card) {
-                        // 淡出动画
                         card.style.opacity = '0';
                         card.style.transform = 'scale(0.9)';
                         setTimeout(() => card.remove(), 300);

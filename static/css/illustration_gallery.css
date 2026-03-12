@@ -1,0 +1,25 @@
+body { padding-bottom: 80px; }
+.gallery-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 0 10px;
+    text-align: center;
+}
+.gallery-item {
+    margin-bottom: 30px;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.gallery-image {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    display: block;
+}
+.image-caption {
+    margin-top: 10px;
+    color: #666;
+    font-size: 0.9em;
+}
