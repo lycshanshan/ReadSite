@@ -21,7 +21,6 @@ from .serializers import (
 from .permissions import IsSuperUser, IsUploaderOrSuperUser
 
 
-# --- 书籍管理 API ---
 @extend_schema(tags=['书籍管理 (Admin)'])
 class BookManageViewSet(viewsets.ModelViewSet):
     """
@@ -127,8 +126,6 @@ class BookManageViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
         return response
 
-
-# --- 章节管理 API ---
 @extend_schema(tags=['章节管理 (Admin)'])
 class ChapterManageViewSet(viewsets.ModelViewSet):
     """
@@ -172,7 +169,6 @@ class ChapterManageViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
-# --- 插图管理 API ---
 @extend_schema(tags=['插图管理 (Admin)'])
 class IllustrationManageViewSet(viewsets.ModelViewSet):
     """
@@ -254,7 +250,6 @@ class GlobalSettingsViewSet(viewsets.GenericViewSet):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# --- 用户管理 API ---
 @extend_schema(tags=['用户管理 (Superuser)'])
 class UserAdminViewSet(viewsets.ModelViewSet):
     """

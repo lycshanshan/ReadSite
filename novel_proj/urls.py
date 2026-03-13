@@ -22,7 +22,7 @@ from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from reader import views, api_views
 
-# 注册 ViewSet 路由
+# ViewSet 路由
 router = DefaultRouter()
 router.register(r'admin/books', api_views.BookManageViewSet)
 router.register(r'admin/chapters', api_views.ChapterManageViewSet)
@@ -32,14 +32,13 @@ router.register(r'admin/users', api_views.UserAdminViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.index, name='index'), # 空字符串代表首页
+    path('', views.index, name='index'),
     path('book/<int:book_id>/', views.book_detail, name='book_detail'),
     path('book/<int:book_id>/download/', views.book_download, name='book_download'),
     path('read/<int:chapter_id>/', views.read_chapter, name='read_chapter'),
     path('illustration/<int:book_id>/<str:volume_name>/', views.view_illustration, name='view_illustration'),
 
-    # 引入 Django 自带的认证 URL
-    # 这会自动帮我们处理 login, logout, password_change 等路由
+    # 引入 Django 自带的认证 URL，自动处理 login, logout, password_change 等路由
     path('accounts/', include('django.contrib.auth.urls')),
     
     # 注册页面
@@ -65,6 +64,6 @@ urlpatterns = [
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
-# 开发模式下，为了能让浏览器直接访问到上传的图片（封面），需要加这一段
+# 开发模式下，让浏览器能直接访问到上传的图片
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
