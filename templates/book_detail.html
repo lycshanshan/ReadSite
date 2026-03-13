@@ -11,8 +11,8 @@
 <body>
     <nav class="top-bar">
         <div class="nav-left">
-            <form action="/" method="get" class="search-box">
-                <input type="text" name="q" class="search-input" placeholder="搜索书名或作者..." value="{{ search_query }}">
+            <form action="{% url 'book_detail' book.id %}" method="get" class="search-box">
+                <input type="text" name="q" class="search-input" placeholder="搜索本书章节..." value="{{ search_query }}">
                 <button type="submit" class="search-btn">🔍</button>
             </form>
         </div>

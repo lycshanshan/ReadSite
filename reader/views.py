@@ -61,10 +61,13 @@ def index(request):
 
 def book_detail(request, book_id):
     book = get_object_or_404(Book, pk=book_id)
+    query = request.GET.get('q', '')
     
     # 获取章节，按 index 排序
     chapters = book.chapters.all().order_by('index')
     first_chapter = chapters.first() # 获取第一章, 用于前端判断是否存在章节
+    if query:
+        chapters = chapters.filter(title__icontains=query)
 
     # 将章节按卷名分组
     volumes = {}
@@ -78,7 +81,7 @@ def book_detail(request, book_id):
 
     for volume_name, chapter_list in volumes.items():
         # --- 检查这一卷是否有插图 ---
-        has_illustration = Illustration.objects.filter(book=book, volume_name=volume_name).exists()
+        has_illustration = (query in f"{volume_name} 插图") and Illustration.objects.filter(book=book, volume_name=volume_name).exists()
         grouped_chapters.append({
             'volume_name': volume_name,
             'chapters': chapter_list,
@@ -106,6 +109,7 @@ def book_detail(request, book_id):
         'first_chapter': first_chapter,
         'progress': progress,
         'in_bookshelf': in_bookshelf,
+        'search_query': query,
     }
     return render(request, 'book_detail.html', context)
 
