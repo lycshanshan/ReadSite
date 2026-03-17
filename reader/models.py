@@ -12,6 +12,7 @@ class Book(models.Model):
     - `author` (CharField): 作者名，最大长度100，默认"未知"。
     - `cover` (ImageField): 封面图片，上传至'covers/'目录，允许为空。
     - `description` (TextField): 小说简介说明，允许为空。
+    - `tags` (JSONField): 作品标签，允许为空。
     - `word_count` (PositiveIntegerField): 总字数，由信号机制自动统计，默认0。
     - `illustration_count` (PositiveIntegerField): 插图数量，由信号机制自动统计，默认0。
     - `is_recommended` (BooleanField): 是否设为推荐书籍，用于前端首页展示，默认False。
@@ -22,6 +23,7 @@ class Book(models.Model):
     author = models.CharField(max_length=100, verbose_name="作者", default="未知")
     cover = models.ImageField(upload_to='covers/', verbose_name="封面", blank=True, null=True)
     description = models.TextField(verbose_name="简介", blank=True)
+    tags = models.JSONField(verbose_name='标签', null=True, blank=True, default=list)
 
      # 统计字段 (由 Chapter 和 Illustration 的 save() 钩子自动维护)
     word_count = models.PositiveIntegerField(default=0, verbose_name="总字数")

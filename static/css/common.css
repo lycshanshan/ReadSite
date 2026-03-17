@@ -27,8 +27,8 @@ a { text-decoration: none; color: inherit; }
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.nav-left { flex: 1; display: flex; align-items: center; }
-.search-box { position: relative; width: 250px; }
+.nav-left { flex: 1; display: flex; align-items: center; gap: 15px; }
+.search-box { position: relative; width: 250px; margin: 5px}
 .search-input {
     width: 100%;
     padding: 6px 12px 6px 12px;
@@ -58,6 +58,7 @@ a { text-decoration: none; color: inherit; }
     padding: 4px 10px; border-radius: 4px; 
     font-size: 12px; cursor: pointer; 
     background: transparent; color: white;
+    width: auto;
 }
 .btn-outline:hover { background: rgba(255,255,255,0.1); border-color: white; text-decoration: none;}
 
