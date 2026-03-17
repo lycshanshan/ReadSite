@@ -82,24 +82,5 @@
         </div>
         {% endfor %}
     </div>
-
-    <script>
-        function removeBookshelf(bookId) {
-            const url = `/bookshelf/toggle/${bookId}/`;
-            fetch(url, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json' },
-            }).then(r => r.json()).then(data => {
-                if (data.status === 'success' && !data.in_bookshelf) {
-                    const card = document.getElementById(`card-book-${bookId}`);
-                    if (card) {
-                        card.style.opacity = '0';
-                        card.style.transform = 'scale(0.9)';
-                        setTimeout(() => card.remove(), 300);
-                    }
-                }
-            });
-        }
-    </script>
 </body>
 </html>
