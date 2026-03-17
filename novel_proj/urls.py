@@ -44,6 +44,8 @@ urlpatterns = [
     # 注册页面
     path('signup/', views.signup, name='signup'),
 
+    path('library/', views.show_library, name='show_library'),
+
     # 个人中心页面
     path('profile/', views.profile, name='profile'),
     path('profile/delete/', views.delete_account, name='delete_account'),

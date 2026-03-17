@@ -1,13 +1,13 @@
 asgiref==3.11.0
 attrs==25.4.0
-Django==6.0.1
+Django==6.0.3
 django-filter==25.2
 djangorestframework==3.16.1
 drf-spectacular==0.29.0
 inflection==0.5.1
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
-pillow==12.1.0
+pillow==12.1.1
 python-dotenv==1.2.2
 PyYAML==6.0.3
 referencing==0.37.0

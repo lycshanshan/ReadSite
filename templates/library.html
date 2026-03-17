@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全部图书</title>
+    <link rel="stylesheet" href="{% static 'css/common.css' %}">
+    <link rel="stylesheet" href="{% static 'css/bookshelf.css' %}">
+    <link rel="stylesheet" href="{% static 'css/book_widget.css' %}">
+</head>
+<body>
+    <nav class="top-bar">
+        <div class="nav-left">
+            <form action="{% url 'show_library' %}" method="get" class="search-box">
+                <input type="text" name="q" class="search-input" placeholder="在全部图书中搜索..." value="{{ search_query }}">
+                <button type="submit" class="search-btn">🔍</button>
+            </form>
+        </div>
+
+        <div class="nav-center">
+            <a href="{% url 'index' %}" class="site-title">Let's Read!</a>
+        </div>
+
+        <div class="nav-right">
+            <span>你好, <a href="{% url 'profile' %}" class="nav-link" style="font-weight: bold;">{{ user.username }}</a></span>
+            <span style="opacity: 0.5">|</span>
+
+            <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-outline">退出</button>
+            </form>
+        </div>
+    </nav>
+
+    {% if search_query %}
+    <div style="max-width: 1200px; margin: 20px auto; padding: 0 20px; text-align: center; color: #666;">
+        搜索结果：包含 "<strong>{{ search_query }}</strong>" 的内容
+        <a href="{% url 'show_library' %}" style="color: #3498db; margin-left: 10px;">[清除搜索]</a>
+    </div>
+    {% endif %}
+
+    <div style="max-width: 1200px; margin: 30px auto; padding: 0 20px;">
+        <h2 style="color: #2c3e50; border-left: 5px solid #2c3e50; padding-left: 15px;">全部图书</h2>
+    </div>
+
+    <div class="shelf-grid">
+        {% for item in booklist %}
+        <div class="shelf-card" id="card-book-{{ item.id }}">
+            <a href="{% url 'book_detail' item.id %}" target="_blank">
+                {% if item.cover %}
+                <img src="{{ item.cover.url }}" class="card-cover">
+                {% else %}
+                <div class="card-cover" style="display:flex; align-items:center; justify-content:center; color:#999; font-size:12px;">无封面</div>
+                {% endif %}
+            </a>
+
+            <div class="card-info">
+                <div>
+                    <div class="card-title-global">{{ item.title }}</div>
+                    <div class="card-author-global">{{ item.author }}</div>
+                    <div class="card-tags"> <ul>
+                        {% for tag in item.tags %}
+                            <li>{{ tag }}</li>
+                        {% endfor %}
+                    </ul></div>
+                </div>
+
+                <div class="btn-row">
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999;">
+            {% if search_query %}
+                <p>未找到匹配的书籍</p>
+            {% else %}
+                <p>书库暂无图书！</p>
+                <br>
+                <a href="{% url 'index' %}" style="color: #2c3e50;">去首页逛逛</a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

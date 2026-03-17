@@ -11,6 +11,7 @@
 <body>
     <nav class="top-bar">
         <div class="nav-left">
+            <a href="{% url 'show_library' %}" class="nav-link btn-outline">图书馆</a>
             <form action="/" method="get" class="search-box">
                 <input type="text" name="q" class="search-input" placeholder="搜索书名或作者..." value="{{ search_query }}">
                 <button type="submit" class="search-btn">🔍</button>

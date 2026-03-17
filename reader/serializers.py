@@ -10,7 +10,7 @@ class BookSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'description', 'cover', 'uploader']
+        fields = ['id', 'title', 'author', 'description', 'cover', 'uploader', 'tags']
         # uploader (上传者) 字段设为只读，由 API 视图在 perform_create 时自动绑定当前用户，防止伪造。
         read_only_fields = ['uploader', 'id']
 
