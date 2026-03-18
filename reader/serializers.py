@@ -1,18 +1,74 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Book, Chapter, Illustration, GlobalSettings
+from .models import Book, Chapter, Illustration, GlobalSettings, Tag
 
 class BookSerializer(serializers.ModelSerializer):
     """
     书籍模型序列化器。  
-    字段：`id`, `title`, `author`, `description`, `cover`, `uploader`  
-    只读字段：`id`, `uploader`
+    字段：`id`, `title`, `author`, `description`, `cover`, `tags`, `tag_names`, `uploader`  
+    只读字段：`id`, `uploader`, `tags`  
+    只写字段：`tag_names`
+    - `tag_names` 字段接收传来的列表并处理标签的创建与绑定; `tag` 字段用于接口返回。
     """
+    # 用于在接口返回时展示标签列表(只读)
+    tags = serializers.SerializerMethodField(read_only=True)
+    
+    # 用于接收前端传来的标签数据(只写)
+    tag_names = serializers.ListField(
+        child=serializers.CharField(max_length=50),
+        write_only=True,
+        required=False,
+        help_text="传入标签名称的列表。不存在的标签将被自动创建。"
+    )
+
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'description', 'cover', 'uploader', 'tags']
+        fields = ['id', 'title', 'author', 'description', 'cover', 'tags', 'tag_names', 'uploader']
         # uploader (上传者) 字段设为只读，由 API 视图在 perform_create 时自动绑定当前用户，防止伪造。
-        read_only_fields = ['uploader', 'id']
+        read_only_fields = ['id', 'tags', 'uploader']
+    
+    def get_tags(self, obj):
+        # 返回类似 ["魔法", "异世界"] 的格式
+        return [tag.name for tag in obj.tags.all()]
+
+    def _handle_tags(self, book, tag_names_data):
+        """内部方法：处理标签的获取、创建与绑定"""
+        if tag_names_data is not None:
+            processed_tags = []
+            # 处理 multipart/form-data 可能传来的逗号分隔字符串 
+            for item in tag_names_data:
+                for tag_name in item.split(','):
+                    tag_name = tag_name.strip()
+                    if tag_name:
+                        processed_tags.append(tag_name)
+            
+            tag_objs = []
+            for name in set(processed_tags):
+                tag_obj, created = Tag.objects.get_or_create(name=name)
+                tag_objs.append(tag_obj)
+
+            book.tags.set(tag_objs)
+
+    def create(self, validated_data):
+        """
+        重写创建方法, 处理书籍标签。
+        """
+        # 拦截 tag_names 并从 validated_data 中移除
+        tag_names = validated_data.pop('tag_names', None)
+        book = super().create(validated_data)
+        self._handle_tags(book, tag_names)
+        return book
+
+    def update(self, instance, validated_data):
+        """
+        重写更新方法, 处理书籍标签。
+        """
+        tag_names = validated_data.pop('tag_names', None)
+        book = super().update(instance, validated_data)
+        if tag_names is not None:
+            self._handle_tags(book, tag_names)
+        return book
+
 
 class ChapterSerializer(serializers.ModelSerializer):
     """
@@ -33,6 +89,7 @@ class ChapterSerializer(serializers.ModelSerializer):
         validated_data.pop('book', None)
         return super().update(instance, validated_data)
 
+
 class IllustrationSerializer(serializers.ModelSerializer):
     """
     插图模型序列化器。  
@@ -52,6 +109,7 @@ class IllustrationSerializer(serializers.ModelSerializer):
         validated_data.pop('book', None)
         return super().update(instance, validated_data)
 
+
 class GlobalSettingsSerializer(serializers.ModelSerializer):
     """
     全局设置序列化器。  
@@ -61,6 +119,7 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GlobalSettings
         fields = ['registration_mode', 'invite_code']
+
 
 class UserAdminSerializer(serializers.ModelSerializer):
     """

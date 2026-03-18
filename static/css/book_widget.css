@@ -1,20 +1,41 @@
-.card-tags ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
+/* 左右布局容器 */
+.layout-container {
+    display: flex; max-width: 1400px; margin: 30px auto; 
+    padding: 0 20px; gap: 30px; align-items: flex-start;
 }
 
-.card-tags li {
-    font-size: 10px;
-    margin-right: 5px;
-    margin-bottom: 5px;
+/* 左侧边栏 */
+.sidebar {
+    width: 280px; background: white; border-radius: 10px; 
+    padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    flex-shrink: 0; position: sticky; top: 80px;
 }
 
-.card-tags li:last-child {
-    margin-right: 0;
+.sidebar-title {
+    font-size: 1.1em; font-weight: bold; color: #2c3e50;
+    margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
 }
 
-.card-title-global { font-size: 1.05em; font-weight: bold; margin-bottom: 3px; color: #2c3e50; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-author-global { font-size: 0.92em; color: #7f8c8d; margin-bottom: 3px; }
+.clear-tags { font-size: 0.8em; color: #e74c3c; cursor: pointer; font-weight: normal; }
+
+.tag-list { 
+    display: flex; flex-wrap: wrap; gap: 10px; 
+}
+.tag-item {
+    padding: 5px 12px; border-radius: 15px; background: #f1f2f6; 
+    color: #2c3e50; font-size: 0.9em; transition: 0.2s;
+    cursor: pointer; user-select: none; border: 1px solid transparent;
+}
+.tag-item:hover { background: #e2e6ea; }
+.tag-item.active { background: #2c3e50; color: white; }
+
+/* 右侧主内容区 */
+.main-content { flex-grow: 1; min-width: 0; }
+.shelf-grid { margin: 0; max-width: 100%; padding: 0; }
+.book-tags { font-size: 0.8em; color: #3498db; margin-bottom: 5px; }
+
+@media (max-width: 768px) {
+    .layout-container { flex-direction: column; }
+    .sidebar { width: 100%; position: static; }
+}

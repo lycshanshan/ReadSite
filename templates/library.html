@@ -7,90 +7,139 @@
     <title>全部书籍</title>
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
     <link rel="stylesheet" href="{% static 'css/bookshelf.css' %}">
-    <style>
-        .tags-container {
-            max-width: 1200px; margin: 20px auto; padding: 15px 20px;
-            background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-        }
-        .tag-item {
-            padding: 5px 12px; border-radius: 15px; background: #f1f2f6; 
-            color: #2c3e50; font-size: 0.9em; transition: 0.2s;
-        }
-        .tag-item:hover, .tag-item.active {
-            background: #2c3e50; color: white;
-        }
-        .book-tags { font-size: 0.8em; color: #3498db; margin-bottom: 5px; }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/book_widget.css' %}">
 </head>
 <body>
     <nav class="top-bar">
         <div class="nav-left">
-            <form action="{% url 'library' %}" method="get" class="search-box">
-                <input type="text" name="q" class="search-input" placeholder="搜索书名/作者/标签..." value="{{ search_query }}">
+            <form id="search-form" class="search-box" onsubmit="event.preventDefault(); applyFilters();">
+                <input type="text" id="search-input" class="search-input" placeholder="搜索书名/作者..." value="{{ search_query }}">
                 <button type="submit" class="search-btn">🔍</button>
             </form>
         </div>
-        <div class="nav-center"><a href="{% url 'index' %}" class="site-title">Let's Read!</a></div>
+
+        <div class="nav-center">
+            <a href="{% url 'index' %}" class="site-title">Let's Read!</a>
+        </div>
+
         <div class="nav-right">
-            <a href="{% url 'my_bookshelf' %}" class="nav-link">我的书架</a>
+            <span>你好, <a href="{% url 'profile' %}" class="nav-link" style="font-weight: bold;">{{ user.username }}</a></span>
+            <span style="opacity: 0.5">|</span>
+            
+            <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-outline">退出</button>
+            </form>
         </div>
     </nav>
 
-    <!-- 标签筛选区 -->
-    <div class="tags-container">
-        <span style="font-weight: bold; color: #7f8c8d;">热门标签：</span>
-        <a href="{% url 'library' %}" class="tag-item {% if not current_tag %}active{% endif %}">全部</a>
-        {% for tag in tags %}
-        <a href="{% url 'library' %}?tag={{ tag.name }}" class="tag-item {% if current_tag == tag.name %}active{% endif %}">
-            {{ tag.name }}
-        </a>
-        {% endfor %}
-    </div>
+    <div class="layout-container">
+        <!-- 标签筛选 -->
+        <aside class="sidebar">
+            <div class="sidebar-title">
+                分类标签
+                <span class="clear-tags" id="clear-tags-btn" style="display: none;" onclick="clearTags()">清除筛选</span>
+            </div>
+            <div class="tag-list" id="tag-container">
+                {% for tag in tags %}
+                <div class="tag-item" data-tag="{{ tag.name }}" onclick="toggleTag(this)">
+                    {{ tag.name }}
+                </div>
+                {% endfor %}
+            </div>
+        </aside>
 
-    <!-- 书籍列表区 -->
-    <div class="shelf-grid">
-        {% for book in books %}
-        <div class="shelf-card">
-            <a href="{% url 'book_detail' book.id %}" target="_blank">
-                {% if book.cover %}
-                <img src="{{ book.cover.url }}" class="card-cover">
-                {% else %}
-                <div class="card-cover" style="display:flex; align-items:center; justify-content:center; color:#999; font-size:12px;">无封面</div>
-                {% endif %}
-            </a>
+        <!-- 书籍列表 -->
+        <main class="main-content">
+            <div class="shelf-grid">
+                {% for book in books %}
+                <div class="shelf-card">
+                    <a href="{% url 'book_detail' book.id %}" target="_blank">
+                        {% if book.cover %}
+                        <img src="{{ book.cover.url }}" class="card-cover">
+                        {% else %}
+                        <div class="card-cover" style="display:flex; align-items:center; justify-content:center; color:#999; font-size:12px;">无封面</div>
+                        {% endif %}
+                    </a>
 
-            <div class="card-info">
-                <div>
-                    <div class="card-title">{{ book.title }}</div>
-                    <div class="card-author">{{ book.author }}</div>
-                    <div class="book-tags">
-                        {% for t in book.tags.all %} #{{ t.name }} {% endfor %}
+                    <div class="card-info">
+                        <div>
+                            <div class="card-title">{{ book.title }}</div>
+                            <div class="card-author">{{ book.author }}</div>
+                            <div class="book-tags">
+                                {% for t in book.tags.all %} #{{ t.name }} {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="btn-row">
+                            <a href="{% url 'book_detail' book.id %}" class="btn-sm btn-read" target="_blank">查看详情</a>
+                            {% if user.is_authenticated %}
+                                <button onclick="toggleBookshelf('{{ book.id }}', this)" 
+                                   class="btn-sm {% if book.id in user_bookshelf_ids %}btn-remove{% else %}btn-read{% endif %}"
+                                   style="{% if book.id not in user_bookshelf_ids %}background-color: #27ae60;{% endif %}">
+                                    {% if book.id in user_bookshelf_ids %}移出书架{% else %}加入书架{% endif %}
+                                </button>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
-
-                <div class="btn-row">
-                    <a href="{% url 'book_detail' book.id %}" class="btn-sm btn-read" target="_blank">详情/阅读</a>
-                    
-                    {% if user.is_authenticated %}
-                        <button onclick="toggleBookshelf('{{ book.id }}', this)" 
-                           class="btn-sm {% if book.id in user_bookshelf_ids %}btn-remove{% else %}btn-read{% endif %}"
-                           style="{% if book.id not in user_bookshelf_ids %}background-color: #27ae60;{% endif %}">
-                            {% if book.id in user_bookshelf_ids %}移出书架{% else %}加入书架{% endif %}
-                        </button>
-                    {% endif %}
+                {% empty %}
+                <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999; background: white; border-radius: 10px;">
+                    没有找到匹配的书籍哦~
                 </div>
+                {% endfor %}
             </div>
-        </div>
-        {% empty %}
-        <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999;">没有找到匹配的书籍哦~</div>
-        {% endfor %}
+        </main>
     </div>
 
     <script>
-        // 复用你已有的加入/移出书架 API 逻辑
+        // 页面加载时, 从 URL 中读取 tags 参数，并恢复高亮选中状态
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tagsParam = urlParams.get('tags');
+            
+            if (tagsParam) {
+                const activeTags = tagsParam.split(',');
+                document.querySelectorAll('.tag-item').forEach(el => {
+                    if (activeTags.includes(el.getAttribute('data-tag'))) {
+                        el.classList.add('active');
+                    }
+                });
+                document.getElementById('clear-tags-btn').style.display = 'block';
+            }
+        });
+
+        // 筛选逻辑：组合当前搜索词和激活的标签，然后跳转
+        function applyFilters() {
+            const query = document.getElementById('search-input').value.trim();
+            const activeTags = [];
+            
+            document.querySelectorAll('.tag-item.active').forEach(el => {
+                activeTags.push(el.getAttribute('data-tag'));
+            });
+
+            const urlParams = new URLSearchParams();
+            if (query) urlParams.set('q', query);
+            if (activeTags.length > 0) urlParams.set('tags', activeTags.join(','));
+
+            window.location.href = "{% url 'library' %}?" + urlParams.toString();
+        }
+
+        function toggleTag(element) {
+            element.classList.toggle('active');
+            applyFilters();
+        }
+
+        function clearTags() {
+            document.querySelectorAll('.tag-item.active').forEach(el => {
+                el.classList.remove('active');
+            });
+            applyFilters();
+        }
+
+        // 加入/移出书架的 AJAX 请求
         function toggleBookshelf(bookId, btnElement) {
-            const url = `/bookshelf/toggle/${bookId}/`;  // 确保与你 urls.py 中配置的一致
+            const url = `/bookshelf/toggle/${bookId}/`;
             fetch(url, {
                 method: 'POST', 
                 headers: { 
@@ -107,7 +156,7 @@
                     } else {
                         btnElement.innerText = '加入书架';
                         btnElement.className = 'btn-sm btn-read';
-                        btnElement.style.backgroundColor = '#27ae60'; // 绿色表示可加入
+                        btnElement.style.backgroundColor = '#27ae60'; 
                     }
                 }
             });

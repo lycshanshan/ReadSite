@@ -71,7 +71,8 @@ def library(request):
     books = Book.objects.all()
 
     query = request.GET.get('q', '').strip()
-    tag_filter = request.GET.get('tag', '').strip()
+    tags_param = request.GET.get('tags', '').strip()
+    selected_tags = [t for t in tags_param.split(',') if t]
 
     if query:
         books = books.filter(
@@ -79,9 +80,11 @@ def library(request):
             Q(author__icontains=query) |
             Q(tags__name__icontains=query)
         ).distinct()
-        
-    if tag_filter:
-        books = books.filter(tags__name=tag_filter).distinct()
+
+    for tag_name in selected_tags:
+        books = books.filter(tags__name=tag_name)
+
+    books = books.distinct()
 
     # 获取用户书架里的书籍ID，用于前端判断是否已在书架
     user_bookshelf_ids = []
@@ -92,7 +95,7 @@ def library(request):
         'books': books,
         'tags': tags,
         'search_query': query,
-        'current_tag': tag_filter,
+        'current_tag': selected_tags,
         'user_bookshelf_ids': user_bookshelf_ids,
     }
     return render(request, 'library.html', context)

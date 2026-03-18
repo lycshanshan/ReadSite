@@ -13,7 +13,7 @@
         <div class="nav-left">
             <a href="{% url 'library' %}" class="nav-link btn-outline">图书馆</a>
             <form action="/" method="get" class="search-box">
-                <input type="text" name="q" class="search-input" placeholder="搜索书名或作者..." value="{{ search_query }}">
+                <input type="text" name="q" class="search-input" placeholder="搜索书名/作者/标签..." value="{{ search_query }}">
                 <button type="submit" class="search-btn">🔍</button>
             </form>
         </div>

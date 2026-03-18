@@ -3,6 +3,13 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 class Tag(models.Model):
+    """
+    标签模型 (Tag)  
+    记录当前存在的所有小说标签。
+    
+    字段说明：
+    - `name` (CharField): 标签名, 最大长度50。
+    """
     name = models.CharField(max_length=50, unique=True, verbose_name="标签名称")
     def __str__(self):
         return self.name
