@@ -17,8 +17,8 @@
             </form>
         </div>
 
-        <div class="nav-center site-title">
-            Let's Read!
+        <div class="nav-center">
+            <a href="{% url 'index' %}" class="site-title">Let's Read!</a>
         </div>
 
         <div class="nav-right">
@@ -54,12 +54,26 @@
                     {{ book.author }}
                 </span>
             </div>
+            {% if book.tags.all %}
+            <div class="book-tags" style="max-height: 50px;">
+                <span style="font-weight: bold;margin-right: 5px">标签:</span>
+                {% for tag in book.tags.all|slice:":6" %}
+                    <span>
+                        <a href="{% url 'library' %}?tags={{ tag.name|urlencode }}" target="_blank">
+                            {{ tag }}
+                        </a>
+                        {% if not forloop.last %} {% endif %}
+                    </span>
+                {% endfor %}
+            </div>
+            {% endif %}
             <div class="book-description">
+                <h3>简介:</h3>
                 {{ book.description|linebreaks }}
             </div>
 
             <div class="action-area" style="margin-top: auto;">
-                <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                <div style="display: flex; gap: 15px">
                     <!-- 阅读 -->
                     {% if progress %}
                         <button class="read-button" onclick="location.href='{% url 'read_chapter' progress.chapter.id %}'">
@@ -83,7 +97,7 @@
                            style="background: {% if in_bookshelf %}#e74c3c{% else %}#27ae60{% endif %}; text-decoration:none;">
                            {% if in_bookshelf %}移出书架{% else %}加入书架{% endif %}
                         </a>
-                        <button class="read-button" style="background-color: #8e44ad;" onclick="checkDownload()">
+                        <button class="read-button" style="background-color: #3498db;" onclick="checkDownload()">
                             TXT下载
                         </button>
                     {% else %}

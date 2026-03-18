@@ -27,7 +27,7 @@ class Book(models.Model):
     - `author` (CharField): 作者名, 最大长度100, 默认"未知"。
     - `cover` (ImageField): 封面图片, 上传至'covers/'目录, 允许为空。
     - `description` (TextField): 小说简介说明, 允许为空。
-    - `tags` (JSONField): 作品标签, 允许为空。
+    - `tags` (ManyToManyField): 作品标签, 允许为空。
     - `word_count` (PositiveIntegerField): 总字数, 由信号机制自动统计, 默认0。
     - `illustration_count` (PositiveIntegerField): 插图数量, 由信号机制自动统计, 默认0。
     - `is_recommended` (BooleanField): 是否设为推荐书籍, 用于前端首页展示, 默认False。
