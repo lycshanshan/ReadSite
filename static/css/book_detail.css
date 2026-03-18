@@ -54,6 +54,18 @@ body {font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
     margin-bottom: 4px;
 }
 
+.book-tags {
+    background: white;
+    padding: 10px 10px 10px 18px;
+    border-radius: 10px;
+    font-family: 宋体, Verdana, Arial, sans-serif;
+    color: cornflowerblue;
+    flex-grow: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    font-size: 18px;
+    align-content: center;
+}
+
 .read-button {
     align-self: start;
     padding: 12px 35px;

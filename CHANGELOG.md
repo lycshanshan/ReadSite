@@ -6,6 +6,7 @@
 - Tags are now displayed in library, with a maximun of 4 tags per book.
 - Title widgets on "book_detail" page can now be clicked as Home button.
 - Buttons under the book widgets are added to quickly manage user bookshelf.
+- Tags are now displayed under the title in detail pages.
 
 ### Bug Fixes
 - `JSONField` is no longer a `string` in api documents, serializers and in practice.
@@ -14,7 +15,8 @@
 ### Improvements
 - The book description of `book_detail` page now has the indent of `2em`.
 - Link logic between detail page and library is more clear.
-- Other improvements speading in `*.css`.
+- Button "TXT下载" now possesses a better color.
+- Other improvements speading in `*.css` and `element-style`.
 
 ### Future Features
 - [ ] Search by certain tag(s) or/and author. 
