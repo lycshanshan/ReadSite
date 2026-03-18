@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Book, Chapter, UserProgress, Bookshelf, Illustration, GlobalSettings, UserPoints, Bookmark
+from .models import *
 
 admin.site.register(Book)
 admin.site.register(Chapter)
@@ -8,6 +8,7 @@ admin.site.register(Bookshelf)
 admin.site.register(Illustration)
 admin.site.register(UserPoints)
 admin.site.register(Bookmark)
+admin.site.register(Tag)
 
 @admin.register(GlobalSettings)
 class GlobalSettingsAdmin(admin.ModelAdmin):

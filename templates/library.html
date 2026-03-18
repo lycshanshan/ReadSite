@@ -4,52 +4,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全部图书</title>
+    <title>全部书籍</title>
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
     <link rel="stylesheet" href="{% static 'css/bookshelf.css' %}">
-    <link rel="stylesheet" href="{% static 'css/book_widget.css' %}">
+    <style>
+        .tags-container {
+            max-width: 1200px; margin: 20px auto; padding: 15px 20px;
+            background: white; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        }
+        .tag-item {
+            padding: 5px 12px; border-radius: 15px; background: #f1f2f6; 
+            color: #2c3e50; font-size: 0.9em; transition: 0.2s;
+        }
+        .tag-item:hover, .tag-item.active {
+            background: #2c3e50; color: white;
+        }
+        .book-tags { font-size: 0.8em; color: #3498db; margin-bottom: 5px; }
+    </style>
 </head>
 <body>
     <nav class="top-bar">
         <div class="nav-left">
-            <form action="{% url 'show_library' %}" method="get" class="search-box">
-                <input type="text" name="q" class="search-input" placeholder="在全部图书中搜索..." value="{{ search_query }}">
+            <form action="{% url 'library' %}" method="get" class="search-box">
+                <input type="text" name="q" class="search-input" placeholder="搜索书名/作者/标签..." value="{{ search_query }}">
                 <button type="submit" class="search-btn">🔍</button>
             </form>
         </div>
-
-        <div class="nav-center">
-            <a href="{% url 'index' %}" class="site-title">Let's Read!</a>
-        </div>
-
+        <div class="nav-center"><a href="{% url 'index' %}" class="site-title">Let's Read!</a></div>
         <div class="nav-right">
-            <span>你好, <a href="{% url 'profile' %}" class="nav-link" style="font-weight: bold;">{{ user.username }}</a></span>
-            <span style="opacity: 0.5">|</span>
-
-            <form action="{% url 'logout' %}" method="post" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn-outline">退出</button>
-            </form>
+            <a href="{% url 'my_bookshelf' %}" class="nav-link">我的书架</a>
         </div>
     </nav>
 
-    {% if search_query %}
-    <div style="max-width: 1200px; margin: 20px auto; padding: 0 20px; text-align: center; color: #666;">
-        搜索结果：包含 "<strong>{{ search_query }}</strong>" 的内容
-        <a href="{% url 'show_library' %}" style="color: #3498db; margin-left: 10px;">[清除搜索]</a>
+    <!-- 标签筛选区 -->
+    <div class="tags-container">
+        <span style="font-weight: bold; color: #7f8c8d;">热门标签：</span>
+        <a href="{% url 'library' %}" class="tag-item {% if not current_tag %}active{% endif %}">全部</a>
+        {% for tag in tags %}
+        <a href="{% url 'library' %}?tag={{ tag.name }}" class="tag-item {% if current_tag == tag.name %}active{% endif %}">
+            {{ tag.name }}
+        </a>
+        {% endfor %}
     </div>
-    {% endif %}
 
-    <div style="max-width: 1200px; margin: 30px auto; padding: 0 20px;">
-        <h2 style="color: #2c3e50; border-left: 5px solid #2c3e50; padding-left: 15px;">全部图书</h2>
-    </div>
-
+    <!-- 书籍列表区 -->
     <div class="shelf-grid">
-        {% for item in booklist %}
-        <div class="shelf-card" id="card-book-{{ item.id }}">
-            <a href="{% url 'book_detail' item.id %}" target="_blank">
-                {% if item.cover %}
-                <img src="{{ item.cover.url }}" class="card-cover">
+        {% for book in books %}
+        <div class="shelf-card">
+            <a href="{% url 'book_detail' book.id %}" target="_blank">
+                {% if book.cover %}
+                <img src="{{ book.cover.url }}" class="card-cover">
                 {% else %}
                 <div class="card-cover" style="display:flex; align-items:center; justify-content:center; color:#999; font-size:12px;">无封面</div>
                 {% endif %}
@@ -57,30 +62,56 @@
 
             <div class="card-info">
                 <div>
-                    <div class="card-title-global">{{ item.title }}</div>
-                    <div class="card-author-global">{{ item.author }}</div>
-                    <div class="card-tags"> <ul>
-                        {% for tag in item.tags %}
-                            <li>{{ tag }}</li>
-                        {% endfor %}
-                    </ul></div>
+                    <div class="card-title">{{ book.title }}</div>
+                    <div class="card-author">{{ book.author }}</div>
+                    <div class="book-tags">
+                        {% for t in book.tags.all %} #{{ t.name }} {% endfor %}
+                    </div>
                 </div>
 
                 <div class="btn-row">
+                    <a href="{% url 'book_detail' book.id %}" class="btn-sm btn-read" target="_blank">详情/阅读</a>
+                    
+                    {% if user.is_authenticated %}
+                        <button onclick="toggleBookshelf('{{ book.id }}', this)" 
+                           class="btn-sm {% if book.id in user_bookshelf_ids %}btn-remove{% else %}btn-read{% endif %}"
+                           style="{% if book.id not in user_bookshelf_ids %}background-color: #27ae60;{% endif %}">
+                            {% if book.id in user_bookshelf_ids %}移出书架{% else %}加入书架{% endif %}
+                        </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
         {% empty %}
-        <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999;">
-            {% if search_query %}
-                <p>未找到匹配的书籍</p>
-            {% else %}
-                <p>书库暂无图书！</p>
-                <br>
-                <a href="{% url 'index' %}" style="color: #2c3e50;">去首页逛逛</a>
-            {% endif %}
-        </div>
+        <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999;">没有找到匹配的书籍哦~</div>
         {% endfor %}
     </div>
+
+    <script>
+        // 复用你已有的加入/移出书架 API 逻辑
+        function toggleBookshelf(bookId, btnElement) {
+            const url = `/bookshelf/toggle/${bookId}/`;  // 确保与你 urls.py 中配置的一致
+            fetch(url, {
+                method: 'POST', 
+                headers: { 
+                    'X-CSRFToken': '{{ csrf_token }}', 
+                    'X-Requested-With': 'XMLHttpRequest', 
+                    'Content-Type': 'application/json' 
+                },
+            }).then(r => r.json()).then(data => {
+                if (data.status === 'success') {
+                    if (data.in_bookshelf) {
+                        btnElement.innerText = '移出书架';
+                        btnElement.className = 'btn-sm btn-remove';
+                        btnElement.style.backgroundColor = ''; 
+                    } else {
+                        btnElement.innerText = '加入书架';
+                        btnElement.className = 'btn-sm btn-read';
+                        btnElement.style.backgroundColor = '#27ae60'; // 绿色表示可加入
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>

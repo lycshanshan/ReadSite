@@ -25,7 +25,9 @@ def index(request):
     query = request.GET.get('q', '')
     if query:
         book_list = Book.objects.filter(
-            Q(title__icontains=query) | Q(author__icontains=query)
+            Q(title__icontains=query) | 
+            Q(author__icontains=query) |
+            Q(tags__name__icontains=query)
         ).order_by('-created_at')
         is_search = True
         recommended_books = []
@@ -57,6 +59,43 @@ def index(request):
         'search_query': query,  # 搜索词回填
     }
     return render(request, 'index.html', context)
+
+
+def library(request):
+    """
+    图书馆页面。
+    以卡片形式(类似bookshelf)列出所有书籍, 方便地加入书架、开始阅读。
+    提供点选标签筛选书籍的功能。
+    """
+    tags = Tag.objects.all()
+    books = Book.objects.all()
+
+    query = request.GET.get('q', '').strip()
+    tag_filter = request.GET.get('tag', '').strip()
+
+    if query:
+        books = books.filter(
+            Q(title__icontains=query) | 
+            Q(author__icontains=query) |
+            Q(tags__name__icontains=query)
+        ).distinct()
+        
+    if tag_filter:
+        books = books.filter(tags__name=tag_filter).distinct()
+
+    # 获取用户书架里的书籍ID，用于前端判断是否已在书架
+    user_bookshelf_ids = []
+    if request.user.is_authenticated:
+        user_bookshelf_ids = Bookshelf.objects.filter(user=request.user).values_list('book_id', flat=True)
+
+    context = {
+        'books': books,
+        'tags': tags,
+        'search_query': query,
+        'current_tag': tag_filter,
+        'user_bookshelf_ids': user_bookshelf_ids,
+    }
+    return render(request, 'library.html', context)
 
 
 def book_detail(request, book_id):
@@ -324,21 +363,6 @@ def delete_account(request):
     return redirect('index')
 
 
-def show_library(request):
-    booklist = Book.objects.all().order_by('id')
-    query = request.GET.get('q', '')
-
-    if query:
-        booklist = booklist.filter(
-            Q(title__icontains=query) |
-            Q(author__icontains=query)
-        )
-
-    content = {'booklist': booklist,
-               'search_query': query}
-    return render(request, 'library.html', content)
-
-
 # 书架列表页
 @login_required
 def my_bookshelf(request):
@@ -354,13 +378,15 @@ def my_bookshelf(request):
 
     if query:
         shelf_items = shelf_items.filter(
-            Q(book__title__icontains=query) |
-            Q(book__author__icontains=query)
+            Q(book__title__icontains=query) | 
+            Q(book__author__icontains=query) |
+            Q(book__tags__name__icontains=query)
         )
         mark_items = mark_items.filter(
             Q(chapter__book__title__icontains=query) |
             Q(chapter__book__author__icontains=query) |
-            Q(chapter__title__icontains=query)
+            Q(chapter__title__icontains=query) |
+            Q(chapter__book__tags__name__icontains=query)
         )
 
     # 查询阅读进度

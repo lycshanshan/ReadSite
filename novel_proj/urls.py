@@ -14,12 +14,15 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from rest_framework.routers import DefaultRouter
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework.routers import DefaultRouter
-from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from django.views.generic.base import RedirectView
+
 from reader import views, api_views
 
 # ViewSet 路由
@@ -33,6 +36,8 @@ router.register(r'admin/users', api_views.UserAdminViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index, name='index'),
+    path('library/', views.library, name='library'),
+
     path('book/<int:book_id>/', views.book_detail, name='book_detail'),
     path('book/<int:book_id>/download/', views.book_download, name='book_download'),
     path('read/<int:chapter_id>/', views.read_chapter, name='read_chapter'),
@@ -43,8 +48,6 @@ urlpatterns = [
     
     # 注册页面
     path('signup/', views.signup, name='signup'),
-
-    path('library/', views.show_library, name='show_library'),
 
     # 个人中心页面
     path('profile/', views.profile, name='profile'),
@@ -64,6 +67,9 @@ urlpatterns = [
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     # Redoc UI
     path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
+    # 核拦截浏览器默认图标请求，重定向到 static 目录
+    path('favicon.ico', RedirectView.as_view(url='/static/favicon.ico', permanent=True)),
 ]
 
 # 开发模式下，让浏览器能直接访问到上传的图片
