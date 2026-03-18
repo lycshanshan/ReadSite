@@ -12,11 +12,12 @@
 <body>
     <nav class="top-bar">
         <div class="nav-left">
-            <form action="{% url 'book_detail' book.id %}" method="get" class="search-box">
-                <input type="text" name="q" class="search-input" placeholder="搜索本书章节..." value="{{ search_query }}">
+            <a href="{% url 'show_library' %}" class="nav-link btn-outline">图书馆</a>
+            <form action="{% url 'my_bookshelf' %}" method="get" class="search-box">
+                <input type="text" name="q" class="search-input" placeholder="在书架中搜索..." value="{{ search_query }}">
                 <button type="submit" class="search-btn">🔍</button>
             </form>
-        </div>
+        </div>v
 
         <div class="nav-center">
             <a href="{% url 'index' %}" class="site-title">Let's Read!</a>
@@ -56,6 +57,7 @@
                 </span>
             </div>
             <div class="book-description">
+                <h3>简介:</h3>
                 {{ book.description|linebreaks }}
             </div>
 
@@ -271,7 +273,7 @@
     }
     {% else %}
     // 无下载插图的函数
-    function checkDownload() {
+    function checkDownload_old() {
         fetch("{% url 'book_download' book.id %}")
         .then(res => res.json())
         .then(data => {

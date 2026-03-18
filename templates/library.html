@@ -81,7 +81,23 @@
                 </div>
 
                 <div class="btn-row">
+                    {% if item.progress %}
+                    <a href="{% url 'read_chapter' item.progress.chapter.id %}" class="btn-sm btn-read" target="_blank">继续阅读</a>
+                    {% else %}
+                    <a href="{% url 'book_detail' item.book.id %}" class="btn-sm btn-read" target="_blank">开始阅读</a>
+                    {% endif %}
 
+                    {% if user.is_authenticated %}
+                        <a href="javascript:void(0);"
+                           id="shelf-btn-{{ item.book.id }}"
+                           onclick="toggleShelf('{{ item.book.id }}')"
+                           class="btn-sm btn-read"
+                           style="background: {% if item.shelved %}#e74c3c{% else %}#27ae60{% endif %}; text-decoration:none;">
+                           {% if item.shelved %}移出书架{% else %}加入书架{% endif %}
+                        </a>
+                    {% else %}
+                        <button class="btn-sm btn-read" disabled style="background:#95a5a6; cursor: not-allowed;" title="请先登录">加入书架</button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -97,5 +113,33 @@
         </div>
         {% endfor %}
     </div>
+    <script>
+        function toggleShelf(bookId) {
+        const url = `/bookshelf/toggle/${bookId}/`;
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const btn = document.getElementById(`shelf-btn-${bookId}`);
+
+                if (data.in_bookshelf) {
+                    btn.style.backgroundColor = '#e74c3c';
+                    btn.innerText = '移出书架';
+                } else {
+                    btn.style.backgroundColor = '#27ae60';
+                    btn.innerText = '加入书架';
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    </script>
 </body>
 </html>

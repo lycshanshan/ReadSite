@@ -334,8 +334,14 @@ def show_library(request):
             Q(author__icontains=query)
         )
 
-    booklist = [{'book': item,
-                 'shelved': Bookshelf.objects.filter(user=request.user, book=item.id).exists() if request.user.is_authenticated else False} for item in booklist]
+    user_authenticated = request.user.is_authenticated
+
+    booklist = [
+    {
+        'book': item,
+        'shelved': Bookshelf.objects.filter(user=request.user, book=item.id).exists() if user_authenticated else False,
+        'progress': UserProgress.objects.filter(user=request.user,book=item.id).first() if user_authenticated else None
+    }for item in booklist]
 
     content = {'booklist': booklist,
                'search_query': query}

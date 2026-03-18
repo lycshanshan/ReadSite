@@ -75,7 +75,6 @@
                     {% else %}
                     <a href="{% url 'book_detail' item.book.id %}" class="btn-sm btn-read" target="_blank">开始阅读</a>
                     {% endif %}
-
                     <a href="javascript:void(0);" 
                        onclick="removeBookshelf('{{ item.book.id }}')" 
                        class="btn-sm btn-remove">

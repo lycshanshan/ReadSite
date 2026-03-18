@@ -39,11 +39,19 @@ body {font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
 }
 
 .book-description {
+    text-indent: 2em each-line;
     background: white;
-    padding: 20px;
+    padding: 18px;
     border-radius: 10px;
     flex-grow: 1;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.book-description h3 {
+    text-decoration: none;
+    text-indent: 0;
+    font-family: 宋体, Verdana, Arial, sans-serif;
+    margin-bottom: 4px;
 }
 
 .read-button {
