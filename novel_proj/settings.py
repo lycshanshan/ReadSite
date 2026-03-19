@@ -31,7 +31,8 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '127.0.0.1')
 ALLOWED_HOSTS = allowed_hosts_env.split(',') if allowed_hosts_env else []
 
-csrf_trusted_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', '127.0.0.1')
+CSRF_TRUST_DEFAULT = 'http://127.0.0.1,http://localhost,http://127.0.0.1:8000,http://localhost:8000'
+csrf_trusted_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', CSRF_TRUST_DEFAULT)
 CSRF_TRUSTED_ORIGINS = csrf_trusted_origins_env.split(',') if csrf_trusted_origins_env else []
 
 

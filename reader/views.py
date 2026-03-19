@@ -1,4 +1,7 @@
-import base64
+import os
+import io
+import tempfile
+import zipfile
 from random import sample
 from urllib.parse import unquote
 
@@ -12,7 +15,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.encoding import escape_uri_path
-from django.http import JsonResponse, StreamingHttpResponse
+from django.http import JsonResponse, FileResponse, StreamingHttpResponse
 
 from .models import *
 
@@ -192,54 +195,51 @@ def book_download(request, book_id):
             user_points.point -= price
             user_points.save()
 
-        # 文件生成器
-        def file_iterator():
+        def generate_text_chunks():
+            """
+            文本生成器，分块生成小说文本。
+            """
             yield f"《{book.title}》\n作者：{book.author}\n\n".encode('utf-8')
             yield f"简介：\n{book.description}\n\n".encode('utf-8')
-
+            
             chapters = book.chapters.all().order_by('index').iterator()
             vol_name = ''
-            volumes = []
-
             for chapter in chapters:
                 if chapter.volume_name != vol_name:
                     vol_name = chapter.volume_name
-                    volumes.append(vol_name)
+                    yield f"{'-' * 20}\n\n{vol_name}\n\n".encode('utf-8')
+                yield f"{chapter.title}\n\n{chapter.content}\n\n\n".encode('utf-8')
 
-            if need_text:
-                chapters = book.chapters.all().order_by('index').iterator()
-                for chapter in chapters:
-                    if chapter.volume_name != vol_name:
-                        vol_name = chapter.volume_name
-                        yield f"{'-' * 20}\n\n".encode('utf-8')
-                        yield f"{vol_name}\n\n".encode('utf-8')
-                    text = f"{chapter.title}\n\n{chapter.content}\n\n\n"
-                    yield text.encode('utf-8')
-
-            if need_img and book.illustration_count > 0:
-                yield f"{'-' * 20}以下为小说插图，以base64编码形式展示{'-' * 20}\n\n"
-                for volume in volumes:
-                    vol_ills = Illustration.objects.filter(book=book, volume_name=volume).order_by('index').iterator()
-                    yield f"{'-' * 20}{volume}{'-' * 20}\n\n"
-                    for ill in vol_ills:
-                        ill_path = ill.image.path
-                        ill_index = ill.index
-                        with open(ill_path, 'rb') as f:
-                            image_data = f.read()
-                            base64_str = base64.b64encode(image_data).decode('utf-8')
-                            yield f"{'-' * 10}{volume} 插图{ill_index}{'-' * 10} start\n"
-                            yield base64_str
-                            yield f"\n{'-' * 10}{volume} 插图{ill_index}{'-' * 10} end\n"
-                        yield "\n"
-                    yield "\n\n"
-
-        response = StreamingHttpResponse(file_iterator(), content_type='text/plain')
-        suffix = ""
-        if need_text and not need_img: suffix = "_text"
-        if not need_text and need_img: suffix = "_img"
-        filename = f"{book.id}{suffix}.txt"
-        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
-        return response
+        # 如果需要下载图片且小说有插图，则打包为 ZIP
+        if need_img and book.illustration_count > 0:
+            temp_file = tempfile.SpooledTemporaryFile(max_size=10*1024*1024, mode='w+b')
+            
+            with zipfile.ZipFile(temp_file, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                # 打开 ZIP 内的一个文件流, 流式写入文本到 ZIP 中
+                if need_text:
+                    with zip_file.open(f"{book.title}.txt", 'w') as txt_file_in_zip:
+                        for chunk in generate_text_chunks():
+                            txt_file_in_zip.write(chunk)
+                
+                # 写入图片
+                illustrations = Illustration.objects.filter(book=book).order_by('volume_name', 'index').iterator()
+                for ill in illustrations:
+                    vol_folder = (ill.volume_name or "正文").replace("/", "_").replace("\\", "_")
+                    _, ext = os.path.splitext(ill.image.path)
+                    arcname = f"{vol_folder}/{ill.id}{ext}"
+                    zip_file.write(ill.image.path, arcname=arcname)
+            
+            temp_file.seek(0)
+            filename = f"{book.id}.zip"
+            response = FileResponse(temp_file, as_attachment=True, filename=filename)
+            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
+            return response
+        else:
+            # 对于纯文本，使用流式响应
+            response = StreamingHttpResponse(generate_text_chunks(), content_type='text/plain')
+            filename = f"{book.id}_text.txt"
+            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
+            return response
 
     # 收到 GET 请求，返回价格信息给前端弹窗用
     return JsonResponse({
