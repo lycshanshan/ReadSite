@@ -30,7 +30,7 @@ class Book(models.Model):
     - `tags` (ManyToManyField): 作品标签, 允许为空。
     - `word_count` (PositiveIntegerField): 总字数, 由信号机制自动统计, 默认0。
     - `illustration_count` (PositiveIntegerField): 插图数量, 由信号机制自动统计, 默认0。
-    - `recos`: Custom name for recommendation tickets the book owns, 0 by default.
+    - `recos` (PositiveIntegerField): 推荐数, 这本书收到的推荐数量。
     - `created_at` (DateTimeField): 收录时间, 每次保存自动更新。
     - `uploader` (ForeignKey to User): 上传该书的员工/管理员, 用于API的权限验证。允许为空, 级联设置为NULL。
     """
@@ -40,7 +40,7 @@ class Book(models.Model):
     description = models.TextField(verbose_name="简介", blank=True)
     tags = models.ManyToManyField(Tag, verbose_name="标签", blank=True)
 
-     # 统计字段 (由 Chapter 和 Illustration 的 save() 钩子自动维护)
+    # 统计字段 (由 Chapter 和 Illustration 的 save() 钩子自动维护)
     word_count = models.PositiveIntegerField(default=0, verbose_name="总字数")
     illustration_count = models.PositiveIntegerField(default=0, verbose_name="插图数量")
 
@@ -236,6 +236,7 @@ class UserPoints(models.Model):
     - `user` (OneToOneField to User): 绑定的系统用户, 级联删除。
     - `point` (PositiveIntegerField): 积分, 可用于消费/兑换, 默认0。
     - `exp` (PositiveIntegerField): 经验值, 决定用户等级, 只增不减, 默认0。
+    - `reco_balance` (PositiveIntegerField): 推荐数, 当前用户拥有的推荐数量。
     - `last_checkin_time` (DateTimeField): 上次签到时间, 用于校验每日签到状态。
     - `user_level` (CharField): 当前会员等级枚举(LV0到LV6), 基于经验值变动。
     """

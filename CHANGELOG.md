@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.3.1] 2026-03-23
+
+### Bug Fixes
+- Fixed some bugs caused by merge.
+
+### Improvements
+- Changed the Reco system language to Chinese.
+- Modified comments.
+
+### Future Features
+- [ ] Optimize Reco system.
+- [ ] Custom order criteria, filters and book groups.
+
 ## [0.3.0] 2026-03-22
 
 ### What's New

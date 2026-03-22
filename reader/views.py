@@ -241,7 +241,7 @@ def book_reco(request, book_id):
 
     return JsonResponse({
         'status': 'ok',
-        'msg': f'Successfully recos the book!\nThe book has now {book.recos} Recos.\n{'And' if user_points.reco_balance > 0 else 'But'}, you have {'only ' if user_points.reco_balance < 1 else 'another '}{user_points.reco_balance} Recos!'
+        'msg': f'推荐成功！\n当前书籍拥有 {book.recos} 个推荐。\n您当前剩余 {user_points.reco_balance} 次推荐机会！'
     })
 
 
@@ -527,7 +527,7 @@ def checkin(request):
         user_points.save()
         return JsonResponse({
             'status': 'success',
-            'msg': f'签到成功！积分+10，经验+10，Reco+{user_points.reco_balance - prev_reco}\n当前等级：{user_points.get_user_level_display()}\n当前Reco：{user_points.reco_balance}{' 已溢出!' if user_points.reco_balance >= 10 else ''}',
+            'msg': f'签到成功！积分+10，经验+10，推荐次数+{user_points.reco_balance - prev_reco}\n当前等级：{user_points.get_user_level_display()}\n当前推荐次数：{user_points.reco_balance}{' 已溢出!' if user_points.reco_balance >= 10 else ''}',
             'current_point': user_points.point,
             'current_reco': user_points.reco_balance,
             'current_level_str': f"{user_points.get_user_level_display()}({user_points.exp}/{user_points.next_level_exp})"

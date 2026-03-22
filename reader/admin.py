@@ -16,7 +16,7 @@ admin.site.register(Bookmark)
 class BookAdmin(admin.ModelAdmin):
     list_display = ('title', 'author', 'uploader', 'created_at', 'download_button')
     search_fields = ('title', 'author')
-    list_filter = ('is_recommended', 'created_at')
+    list_filter = ('created_at',)
     actions = ['batch_download_books']
 
     def save_model(self, request, obj, form, change):
