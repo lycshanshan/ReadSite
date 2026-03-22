@@ -1,24 +1,37 @@
 import os
 import tempfile
 import zipfile
-from random import sample
+from random import sample, randint
 from urllib.parse import unquote
 
-from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
+from django.contrib.auth.forms import UserCreationForm
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.utils import timezone
-from django.utils.encoding import escape_uri_path
 from django.http import JsonResponse, FileResponse, StreamingHttpResponse
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils.encoding import escape_uri_path
+from django.views.decorators.http import require_POST
 
 from .models import *
 from .services import BookDownloadService
 
+
+def get_recommend_books(booklist):
+    if len(booklist) <= 4:
+        return booklist
+    rec = []
+    weight = [(i.recos + 0.1) * 10 for i in booklist]
+    big = sum(weight)
+    while len(rec) < 4:
+        big_int = randint(0, big)
+        for i in range(len(booklist)):
+            big_int -= weight[i]
+            if big_int < 0:
+                rec.append(booklist[i])
+    return rec
 
 def index(request):
     """
@@ -35,21 +48,14 @@ def index(request):
         is_search = True
         recommended_books = []
     else:
-        book_list = Book.objects.all().order_by('-created_at')
+        book_list = Book.objects.all().order_by('-recos')
+
+        if book_list.count() <= 4:
+            recommended_books = list(book_list)
 
         # 推荐书籍取用逻辑：取前四本推荐书籍，若不满四本则从其他书籍中随机抽取，尽可能填满4本
-        recommended_books = Book.objects.filter(is_recommended=True).order_by('-created_at')[:4]
-        length_rec = recommended_books.count()
-        if length_rec < 4:
-            need = 4 - length_rec
-            other_ids = list(Book.objects.exclude(is_recommended=True).values_list('id', flat=True))
-            if len(other_ids) <= need:
-                random_ids = other_ids
-            else:
-                random_ids = sample(other_ids, need)
-            recommended_books = Book.objects.filter(
-                Q(id__in=random_ids) | Q(is_recommended=True)
-            ).order_by('-created_at')
+        recommended_books = get_recommend_books(list(book_list))
+
         is_search = False
 
     paginator = Paginator(book_list, 20)
@@ -179,7 +185,7 @@ def book_download(request, book_id):
     if request.method == 'POST':
         need_text = request.POST.get('need_text') == 'on' or book.illustration_count == 0
         need_img = request.POST.get('need_img') == 'on'
-        if not need_text and not need_img:
+        if not (need_text or need_img):
             return JsonResponse({'status': 'fail', 'msg': '请至少选择一项下载内容！'})
 
         # 计算总金额、校验余额、扣费
@@ -205,6 +211,37 @@ def book_download(request, book_id):
         'text_price': text_price,
         'img_price': img_price,
         'user_point': user_points.point
+    })
+
+
+def book_reco(request, book_id):
+    book = get_object_or_404(Book, pk=book_id)
+    user_points, created = UserPoints.objects.get_or_create(user=request.user)
+
+    if request.method != 'POST':
+        return JsonResponse({
+            'status': 'ok',
+            'user_recos': user_points.reco_balance,
+            'cur_bookreco': book.recos,
+            'reco_able': user_points.reco_balance > 0,
+        })
+
+    recos = user_points.reco_balance
+
+    if recos < 1:
+        return JsonResponse({
+            'status': 'fail',
+            'msg': 'Not Enough Recos!'
+        })
+
+    book.recos += 1
+    book.save()
+    user_points.reco_balance -= 1
+    user_points.save()
+
+    return JsonResponse({
+        'status': 'ok',
+        'msg': f'Successfully recos the book!\nThe book has now {book.recos} Recos.\n{'And' if user_points.reco_balance > 0 else 'But'}, you have {'only ' if user_points.reco_balance < 1 else 'another '}{user_points.reco_balance} Recos!'
     })
 
 
@@ -460,33 +497,39 @@ def checkin(request):
 
     now = timezone.now()
     if created or user_points.last_checkin_time.date() != now.date():
-        # 增加积分和经验
         user_points.point += 10
         user_points.exp += 10
+        prev_reco = user_points.reco_balance
+        user_points.reco_balance += 1
         user_points.last_checkin_time = now
 
-        # 计算并更新等级
         exp = user_points.exp
         new_level = 'LV0'
-        if exp > 1000:
+        if exp >= 1000:
             new_level = 'LV6'
-        elif exp > 350:
+            user_points.reco_balance += 3
+        elif exp >= 350:
             new_level = 'LV5'
-        elif exp > 200:
+            user_points.reco_balance += 2
+        elif exp >= 200:
             new_level = 'LV4'
-        elif exp > 100:
+            user_points.reco_balance += 1
+        elif exp >= 100:
             new_level = 'LV3'
-        elif exp > 50:
+        elif exp >= 50:
             new_level = 'LV2'
-        elif exp > 20:
+        elif exp >= 20:
             new_level = 'LV1'
+
+        user_points.reco_balance = min(user_points.reco_balance, 10)
 
         user_points.user_level = new_level
         user_points.save()
         return JsonResponse({
             'status': 'success',
-            'msg': f'签到成功！积分+10，经验+10\n当前等级：{user_points.get_user_level_display()}',
+            'msg': f'签到成功！积分+10，经验+10，Reco+{user_points.reco_balance - prev_reco}\n当前等级：{user_points.get_user_level_display()}\n当前Reco：{user_points.reco_balance}{' 已溢出!' if user_points.reco_balance >= 10 else ''}',
             'current_point': user_points.point,
+            'current_reco': user_points.reco_balance,
             'current_level_str': f"{user_points.get_user_level_display()}({user_points.exp}/{user_points.next_level_exp})"
         })
     else:

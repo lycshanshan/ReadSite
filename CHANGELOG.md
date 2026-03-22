@@ -8,7 +8,7 @@
 ### Future Features
 - [x] Reconstruct the database from `SQLite` to `MySQL`.
 - [ ] Custom order criteria, filters and book groups.
-- [ ] Recommendation system.
+- [x] Recommendation system.
 
 ### * How to change your database from `SQLite` to `MySQL`?
 1. Run the following command to save your sqlite data to a json file:
@@ -40,7 +40,23 @@ python manage.py loaddata datadump.json
 ### Future Features
 - [ ] Reconstruct the database from `SQLite` to `MySQL`.
 - [ ] Custom order criteria, filters and book groups.
-- [ ] Recommendation system.
+- [x] Recommendation system.
+
+## [0.2.0] 2026-03-22
+
+### What's New
+- Recommendation system is now available. Users can aquire `Recos` through daily check-in and use them to recommend a book in its detail page.
+- The display of recommended book on title page has a revamped logic.
+
+### Bug Fixes
+- Fixed `UserPoint not exist` when trying to download books via a pre-registed User.
+
+### Improvements
+- Added `library` link to book detail page.
+
+### Future Features
+- [ ] Custom order criteria, filters and book groups.
+- [x] Recommendation system.
 
 ## [0.1.2] 2026-03-20
 

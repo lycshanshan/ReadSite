@@ -51,7 +51,7 @@
         <div class="book-info">
             <div style="display: flex; align-items: baseline; gap: 15px; flex-wrap: wrap;">
                 <h1 class="book-title">{{ book.title }}</h1>
-                <a style="color: #666; font-size: 0.9em;" href="{% url 'library' %}?q={{ book.author }}"></a>
+                <a style="color: #666; font-size: 0.9em;" href="{% url 'library' %}?q={{ book.author }}">
                     {{ book.author }}
                 </a>
             </div>
@@ -98,7 +98,7 @@
                            style="background: {% if in_bookshelf %}#e74c3c{% else %}#27ae60{% endif %}; text-decoration:none;">
                            {% if in_bookshelf %}移出书架{% else %}加入书架{% endif %}
                         </a>
-                        <button class="read-button" style="background-color: #d29de6;">推荐本书</button>
+                        <button class="read-button" style="background-color: #d29de6;" onclick="sendReco()">推荐本书</button>
                         <button class="read-button" style="background-color: #3498db;" onclick="checkDownload()">
                             TXT下载
                         </button>
@@ -176,14 +176,32 @@
                 </div>
                 {% endif %}
                 <div>
-                    <button type="button" class="btn-cancel" onclick="closeDownloadModal()">取消</button>
-                    <button type="submit" id="btn-dl-submit" class="btn-confirm" style="background-color: #8e44ad;">确认支付并下载</button>
+                    <button type="button" class="btn-cancel" onclick="closeModal('downloadModal')">取消</button>
+                    <button type="submit" id="btn-dl-submit" class="btn-confirm" style="background-color: #3498db;">确认支付并下载</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="recoModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #2c3e50;" id="state-of-reco">--</h3>
+            <div style="text-align: center; margin: 20px 0; line-height: 1.8;">
+                <p id="msg-from-reco">--</p>
+            </div>
+            <form id="recoForm" action="{% url 'book_reco' book.id %}" method="post" class="modal-actions">
+                {% csrf_token %}
+                <div>
+                    <button type="button" class="btn-cancel" onclick="closeModal('recoModal')">Close</button>
                 </div>
             </form>
         </div>
     </div>
 
 <script>
+    const dlModal = document.getElementById('downloadModal');
+    const recoModal = document.getElementById('recoModal');
+
     function toggleVolume(headerElement) {
         headerElement.classList.toggle('is-collapsed');
         const content = headerElement.nextElementSibling;
@@ -193,8 +211,6 @@
             content.classList.add('collapsed');
         }
     }
-
-    const dlModal = document.getElementById('downloadModal');
 
     {% if book.illustration_count > 0 %}
     // 有下载插图的函数
@@ -280,7 +296,7 @@
         } else {
             btnSubmit.disabled = false;
             btnSubmit.innerText = "确认支付并下载";
-            btnSubmit.style.backgroundColor = "#8e44ad";
+            btnSubmit.style.backgroundColor = "#3498db";
             btnSubmit.style.cursor = "pointer";
         }
     }
@@ -304,7 +320,7 @@
                 } else {
                     submitBtn.disabled = false;
                     submitBtn.innerText = "确认支付并下载";
-                    submitBtn.style.backgroundColor = "#8e44ad";
+                    submitBtn.style.backgroundColor = "#3498db";
                     submitBtn.style.cursor = "pointer";
                 }
 
@@ -314,8 +330,28 @@
     }
     {% endif %}
 
-    function closeDownloadModal() {
-        dlModal.style.display = 'none';
+    function sendReco() {
+        fetch("{% url 'book_reco' book.id %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            },
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status) {
+                document.getElementById('state-of-reco').innerText = data.status === 'ok' ? "Successful!" : "Failed!";
+                document.getElementById('msg-from-reco').innerText = data.msg;
+            }
+            recoModal.style.display = 'flex';
+        });
+    }
+
+    function closeModal(object) {
+        let htmlobject = document.getElementById(object);
+        htmlobject.style.display = 'none';
     }
 
     document.getElementById('downloadForm').onsubmit = function() {

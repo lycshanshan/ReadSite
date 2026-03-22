@@ -30,7 +30,7 @@ class Book(models.Model):
     - `tags` (ManyToManyField): 作品标签, 允许为空。
     - `word_count` (PositiveIntegerField): 总字数, 由信号机制自动统计, 默认0。
     - `illustration_count` (PositiveIntegerField): 插图数量, 由信号机制自动统计, 默认0。
-    - `is_recommended` (BooleanField): 是否设为推荐书籍, 用于前端首页展示, 默认False。
+    - `recos`: Custom name for recommendation tickets the book owns, 0 by default.
     - `created_at` (DateTimeField): 收录时间, 每次保存自动更新。
     - `uploader` (ForeignKey to User): 上传该书的员工/管理员, 用于API的权限验证。允许为空, 级联设置为NULL。
     """
@@ -44,7 +44,7 @@ class Book(models.Model):
     word_count = models.PositiveIntegerField(default=0, verbose_name="总字数")
     illustration_count = models.PositiveIntegerField(default=0, verbose_name="插图数量")
 
-    is_recommended = models.BooleanField(default=False, verbose_name="是否推荐")
+    recos = models.PositiveIntegerField(default=0, verbose_name="Reco数")
     created_at = models.DateTimeField(auto_now=True, verbose_name="收录时间")
     uploader = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="上传者")
 
@@ -52,7 +52,7 @@ class Book(models.Model):
         return self.title
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-created_at', '-recos']
         verbose_name = "小说"
         verbose_name_plural = verbose_name
 
@@ -242,6 +242,7 @@ class UserPoints(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="用户")
     point = models.PositiveIntegerField(default=0, verbose_name="积分")
     exp = models.PositiveIntegerField(default=0, verbose_name="经验值")
+    reco_balance = models.PositiveIntegerField(default=0, verbose_name="Recos")
     last_checkin_time = models.DateTimeField(default=timezone.now, verbose_name="上次签到时间")
 
     LEVEL_CHOICES = [
