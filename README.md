@@ -1,9 +1,9 @@
 # 📚 ReadSite - 在线小说阅读系统
 
-![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)
-![Django](https://img.shields.io/badge/Django-6.x-092E20.svg)
-![DRF](https://img.shields.io/badge/DRF-3.14+-red.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org)
+[![Django](https://img.shields.io/badge/Django-6.x-092E20.svg)](https://www.djangoproject.com/)
+[![DRF](https://img.shields.io/badge/DRF-3.14+-red.svg)](https://www.django-rest-framework.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 基于 Django + Django REST Framework 开发的轻量级在线小说阅读平台。支持小说阅读、分卷管理、插图画廊、积分签到系统，并提供完善的后台 RESTful API 与 Swagger 交互文档。
 
@@ -23,7 +23,7 @@
 
 - **后端框架**: Django 6.x
 - **API 框架**: Django REST Framework (DRF)
-- **数据库**: SQLite (默认，可轻松迁移至 MySQL/PostgreSQL)
+- **数据库**: MySQL (mysqlclient)
 - **API 文档**: `drf-spectacular` (Swagger UI & Redoc)
 - **环境变量**: `python-dotenv`
 
@@ -42,8 +42,8 @@
 
 ### 1. 克隆项目
 ```bash
-git clone https://github.com/你的用户名/novel-reader.git
-cd novel-reader
+git clone https://github.com/lycshanshan/ReadSite.git
+cd ReadSite
 ```
 
 ### 2. 创建并激活虚拟环境
@@ -60,11 +60,31 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. 配置环境变量
+### 4. 创建 MySQL 数据库
+1. 打开命令行 (cmd/终端)。
+2. 输入登录命令：
+   ```bash
+   mysql -u root -p
+   ```
+3. 输入你安装 MySQL 时设置的 root 密码，按回车。
+4. 出现 `mysql>` 提示符后，输入以下命令创建数据库：
+   ```sql
+   CREATE DATABASE novel_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+5. 输入 `exit;` 退出控制台。
+
+### 5. 配置环境变量
 在项目根目录创建一个 `.env` 文件，填入以下内容：
 ```env
 # --- 安全配置 ---
-SECRET_KEY=填入一个复杂的随机字符串，不要外泄
+SECRET_KEY=填入一个复杂的随机字符串
+
+DB_NAME=你的数据库名称
+DB_USER=root (或你创建的用户名)
+DB_PASSWORD=用户对应的密码
+DB_HOST=127.0.0.1
+DB_PORT=3306 (MySQL运行的端口, 默认值为3306)
+
 # 开发时填 True，上线时填 False
 DEBUG=True
 
@@ -76,19 +96,19 @@ ALLOWED_HOSTS=127.0.0.1,localhost
 CSRF_TRUSTED_ORIGINS=http://127.0.0.1,http://localhost,http://127.0.0.1:8000,http://localhost:8000
 ```
 
-### 5. 初始化数据库与静态文件
+### 6. 初始化数据库与静态文件
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 python manage.py collectstatic
 ```
 
-### 6. 创建超级管理员 (用于测试 API 和后台系统设置)
+### 7. 创建超级管理员 (用于测试 API 和后台系统设置)
 ```bash
 python manage.py createsuperuser
 ```
 
-### 7. 启动服务
+### 8. 启动服务
 ```bash
 python manage.py runserver
 ```
@@ -122,15 +142,6 @@ gunicorn novel_proj.wsgi:application --bind 0.0.0.0:8000 --workers 3
 ```
 
 ---
-
-## 🤝 贡献指南
-
-欢迎提交 Issue 和 Pull Request！
-1. Fork 本仓库
-2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开一个 Pull Request
 
 ## 📄 开源协议
 

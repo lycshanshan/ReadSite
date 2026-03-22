@@ -35,6 +35,9 @@ router.register(r'admin/users', api_views.UserAdminViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    path('joinus/', views.joinus, name='joinus'),
+
     path('', views.index, name='index'),
     path('library/', views.library, name='library'),
 

@@ -11,6 +11,7 @@
 <body>
     <nav class="top-bar">
         <div class="nav-left">
+            <a href="{% url 'library' %}" class="nav-link btn-outline">图书馆</a>
             <form action="{% url 'book_detail' book.id %}" method="get" class="search-box">
                 <input type="text" name="q" class="search-input" placeholder="搜索本书章节..." value="{{ search_query }}">
                 <button type="submit" class="search-btn">🔍</button>
@@ -50,9 +51,9 @@
         <div class="book-info">
             <div style="display: flex; align-items: baseline; gap: 15px; flex-wrap: wrap;">
                 <h1 class="book-title">{{ book.title }}</h1>
-                <span style="color: #666; font-size: 0.9em;">
+                <a style="color: #666; font-size: 0.9em;" href="{% url 'library' %}?q={{ book.author }}"></a>
                     {{ book.author }}
-                </span>
+                </a>
             </div>
             {% if book.tags.all %}
             <div class="book-tags" style="max-height: 50px;">
@@ -74,7 +75,7 @@
 
             <div class="action-area" style="margin-top: auto;">
                 <div style="display: flex; gap: 15px">
-                    <!-- 阅读 -->
+
                     {% if progress %}
                         <button class="read-button" onclick="location.href='{% url 'read_chapter' progress.chapter.id %}'">
                             继续阅读
@@ -88,7 +89,7 @@
                             <button class="read-button" disabled>暂无章节</button>
                         {% endif %}
                     {% endif %}
-                    <!-- 书架 -->
+
                     {% if user.is_authenticated %}
                         <a href="javascript:void(0);" 
                            id="shelf-btn-{{ book.id }}" 
@@ -97,6 +98,7 @@
                            style="background: {% if in_bookshelf %}#e74c3c{% else %}#27ae60{% endif %}; text-decoration:none;">
                            {% if in_bookshelf %}移出书架{% else %}加入书架{% endif %}
                         </a>
+                        <button class="read-button" style="background-color: #d29de6;">推荐本书</button>
                         <button class="read-button" style="background-color: #3498db;" onclick="checkDownload()">
                             TXT下载
                         </button>

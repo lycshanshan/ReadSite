@@ -1,5 +1,47 @@
 # Change Log
 
+## [0.3.0] 2026-03-22
+
+### What's New
+- Reconstructed the database from `SQLite` to `MySQL`.
+
+### Future Features
+- [x] Reconstruct the database from `SQLite` to `MySQL`.
+- [ ] Custom order criteria, filters and book groups.
+- [ ] Recommendation system.
+
+### * How to change your database from `SQLite` to `MySQL`?
+1. Run the following command to save your sqlite data to a json file:
+```bash
+python -X utf8 manage.py dumpdata datadump.json
+```
+If you encounter a problem when importing it to MySQL, try to use this:
+```bash
+python -X utf8 manage.py dumpdata reader.Tag reader.Book reader.Chapter reader.Illustration reader.UserProgress reader.Bookshelf reader.Bookmark reader.GlobalSettings reader.UserPoints reader.StaffApplication auth.user --exclude contenttypes --exclude auth.permission --natural-foreign --output datadump.json
+```
+2. Create a MySQL database and change your `.env` file. (You can refer to [README](README))
+3. Run the following command to migrate data:
+```bash
+python manage.py loaddata datadump.json
+```
+
+## [0.2.1] 2026-03-22
+
+### What's New
+- Updated administrator page.
+  - Use `django-jazzmin` to beautify admin page.
+  - Now staffs can view the admin page to view all `Book`, `Chapter`, `Illustration`, `Tag`, while they can only modify what they uploaded; they can only add `Tag`.
+- When normal user try to view `/admin`, redirect them to `joinus.html`, they can submit application to become staff.
+- Author label can now be clicked to search for books witten by the same author. (By [@JIMJMjm](https://github.com/JIMJMjm))
+
+### Bug Fixes
+- Fixed some inconsistent appearance in `book_detail.css` (By [@JIMJMjm](https://github.com/JIMJMjm))
+
+### Future Features
+- [ ] Reconstruct the database from `SQLite` to `MySQL`.
+- [ ] Custom order criteria, filters and book groups.
+- [ ] Recommendation system.
+
 ## [0.1.2] 2026-03-20
 
 ### What's New
@@ -14,5 +56,31 @@
 
 ### Future Features
 - [x] Set a maximum for tags of each book.
+- [ ] Custom order criteria, filters and book groups.
+- [ ] Recommendation system.
+
+
+## [0.1.1] 2026-03-18
+
+### What's New
+- Created `Tags` model for storing all tags.
+- Change `Book.tags` model from `JSONField` to `ManyToManyField`.
+- Tags are now displayed in library, with a maximun of 4 tags per book.
+- Title widgets on "book_detail" page can now be clicked as Home button.
+- Buttons under the book widgets are added to quickly manage user bookshelf.
+- Tags are now displayed under the title in detail pages.
+
+### Bug Fixes
+- Fixed the API document page.
+- Fixed "Not Found /favicon.ico 404" state by addding a `favicon.ico` to `/static`.
+
+### Improvements
+- The book description of `book_detail` page now has the indent of `2em`.
+- Link logic between detail page and library is more clear.
+- Button "TXT下载" now possesses a better color.
+- Other improvements speading in `*.css` and `element-style`.
+
+### Future Features
+- [ ] Set a maximum for tags of each book.
 - [ ] Custom order criteria, filters and book groups.
 - [ ] Recommendation system.

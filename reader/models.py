@@ -276,3 +276,33 @@ class UserPoints(models.Model):
     class Meta:
         verbose_name = "用户积分"
         verbose_name_plural = verbose_name
+
+
+class StaffApplication(models.Model):
+    """
+    员工申请 (StaffApplication)
+    管理普通用户成为Staff的申请。
+
+    字段说明：
+    - `user` (OneToOneField to User): 绑定的系统用户, 级联删除。
+    - `reason` (TextField): 申请理由, 允许为空。
+    - `status` (CharField): 申请状态, 绑定到选项列表 STATUS_CHOICES
+    - `created_at` (DateTimeField): 申请时间。
+    """
+    STATUS_CHOICES = [
+        ('pending', '待审批'),
+        ('approved', '已通过'),
+        ('rejected', '已拒绝'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="申请用户")
+    reason = models.TextField(verbose_name="申请理由", blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="状态")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="申请时间")
+    
+    class Meta:
+        verbose_name = "Staff 申请"
+        verbose_name_plural = verbose_name
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} 的申请"
