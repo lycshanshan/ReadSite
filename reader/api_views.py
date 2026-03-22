@@ -19,6 +19,7 @@ from .serializers import (
     GlobalSettingsSerializer, UserAdminSerializer
 )
 from .permissions import IsSuperUser, IsUploaderOrSuperUser
+from .services import BookDownloadService
 
 
 @extend_schema(tags=['书籍管理 (Admin)'])
@@ -79,58 +80,13 @@ class BookManageViewSet(viewsets.ModelViewSet):
     # url_path='download' -> /api/admin/books/{id}/download/
     @extend_schema(
         summary="下载书籍 TXT",
-        description="将整本书籍（含章节和插图Base64）打包为 TXT 文件下载。",
+        description="将整本书籍（含章节和插图）打包下载。若仅有文字，下载 TXT 文件; 否则下载 ZIP 文件。",
         responses={(200, 'application/octet-stream'): OpenApiTypes.BINARY}
     )
     @action(detail=True, methods=['get'], permission_classes=[IsAdminUser])
     def download(self, request, pk=None):
         book = self.get_object()
-    
-        def generate_text_chunks():
-            """
-            文本生成器，分块生成小说文本。
-            """
-            yield f"《{book.title}》\n作者：{book.author}\n\n".encode('utf-8')
-            yield f"简介：\n{book.description}\n\n".encode('utf-8')
-            
-            chapters = book.chapters.all().order_by('index').iterator()
-            vol_name = ''
-            for chapter in chapters:
-                if chapter.volume_name != vol_name:
-                    vol_name = chapter.volume_name
-                    yield f"{'-' * 20}\n\n{vol_name}\n\n".encode('utf-8')
-                yield f"{chapter.title}\n\n{chapter.content}\n\n\n".encode('utf-8')
-
-        # 如果小说有插图，则打包为 ZIP
-        if need_img and book.illustration_count > 0:
-            temp_file = tempfile.SpooledTemporaryFile(max_size=10*1024*1024, mode='w+b')
-            
-            with zipfile.ZipFile(temp_file, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                # 打开 ZIP 内的一个文件流, 流式写入文本到 ZIP 中
-                if need_text:
-                    with zip_file.open(f"{book.title}.txt", 'w') as txt_file_in_zip:
-                        for chunk in generate_text_chunks():
-                            txt_file_in_zip.write(chunk)
-                
-                # 写入图片
-                illustrations = Illustration.objects.filter(book=book).order_by('volume_name', 'index').iterator()
-                for ill in illustrations:
-                    vol_folder = (ill.volume_name or "正文").replace("/", "_").replace("\\", "_")
-                    _, ext = os.path.splitext(ill.image.path)
-                    arcname = f"{vol_folder}/{ill.id}{ext}"
-                    zip_file.write(ill.image.path, arcname=arcname)
-            
-            temp_file.seek(0)
-            filename = f"{book.id}.zip"
-            response = FileResponse(temp_file, as_attachment=True, filename=filename)
-            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
-            return response
-        else:
-            # 对于纯文本，使用流式响应
-            response = StreamingHttpResponse(generate_text_chunks(), content_type='text/plain')
-            filename = f"{book.id}_text.txt"
-            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
-            return response
+        return BookDownloadService.generate_download_response(book, need_text=True, need_img=True)
 
 
 @extend_schema(tags=['章节管理 (Admin)'])

@@ -16,6 +16,7 @@ from django.utils.encoding import escape_uri_path
 from django.views.decorators.http import require_POST
 
 from .models import *
+from .services import BookDownloadService
 
 
 def get_recommend_books(booklist):
@@ -171,7 +172,7 @@ def book_download(request, book_id):
     """
     处理小说下载请求。
     功能：价格计算、积分校验、扣费。
-    GET请求返回价格信息到前端，POST请求扣费并下载。
+    GET请求返回价格信息到前端, POST请求扣费并下载。
     """
     book = get_object_or_404(Book, pk=book_id)
     user_points, created = UserPoints.objects.get_or_create(user=request.user)
@@ -200,52 +201,8 @@ def book_download(request, book_id):
             user_points.point -= price
             user_points.save()
 
-        def generate_text_chunks():
-            """
-            文本生成器，分块生成小说文本。
-            """
-            yield f"《{book.title}》\n作者：{book.author}\n\n".encode('utf-8')
-            yield f"简介：\n{book.description}\n\n".encode('utf-8')
-            
-            chapters = book.chapters.all().order_by('index').iterator()
-            vol_name = ''
-            for chapter in chapters:
-                if chapter.volume_name != vol_name:
-                    vol_name = chapter.volume_name
-                    yield f"{'-' * 20}\n\n{vol_name}\n\n".encode('utf-8')
-                yield f"{chapter.title}\n\n{chapter.content}\n\n\n".encode('utf-8')
-
-        # 如果需要下载图片且小说有插图，则打包为 ZIP
-        if need_img and book.illustration_count > 0:
-            temp_file = tempfile.SpooledTemporaryFile(max_size=10*1024*1024, mode='w+b')
-            
-            with zipfile.ZipFile(temp_file, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                # 打开 ZIP 内的一个文件流, 流式写入文本到 ZIP 中
-                if need_text:
-                    with zip_file.open(f"{book.title}.txt", 'w') as txt_file_in_zip:
-                        for chunk in generate_text_chunks():
-                            txt_file_in_zip.write(chunk)
-                
-                # 写入图片
-                illustrations = Illustration.objects.filter(book=book).order_by('volume_name', 'index').iterator()
-                for ill in illustrations:
-                    vol_folder = (ill.volume_name or "正文").replace("/", "_").replace("\\", "_")
-                    _, ext = os.path.splitext(ill.image.path)
-                    arcname = f"{vol_folder}/{ill.id}{ext}"
-                    zip_file.write(ill.image.path, arcname=arcname)
-            
-            temp_file.seek(0)
-            filename = f"{book.id}.zip"
-            response = FileResponse(temp_file, as_attachment=True, filename=filename)
-            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
-            return response
-        else:
-            # 对于纯文本，使用流式响应
-            response = StreamingHttpResponse(generate_text_chunks(), content_type='text/plain')
-            filename = f"{book.id}_text.txt"
-            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
-            return response
-
+        return BookDownloadService.generate_download_response(book, need_text=need_text, need_img=need_img)
+    
     # 收到 GET 请求，返回价格信息给前端弹窗用
     return JsonResponse({
         'status': 'ok',
@@ -445,6 +402,41 @@ def my_bookshelf(request):
     }
 
     return render(request, 'bookshelf.html', content)
+
+
+@login_required
+def joinus(request):
+    """
+    joinus 视图。
+    """
+    if request.user.is_staff or request.user.is_superuser:
+        return redirect('/admin/')
+    application = StaffApplication.objects.filter(user=request.user).first()
+    
+    if request.method == 'POST':
+        if application and application.status != 'rejected':
+            messages.warning(request, "您已经提交过申请，请耐心等待管理员审批。")
+            return redirect('index')
+        reason = request.POST.get('reason', '').strip()
+        
+        if application:
+            application.reason = reason
+            application.status = 'pending'
+            application.save()
+        else:
+            StaffApplication.objects.create(
+                user=request.user,
+                reason=reason,
+                status='pending'
+            )
+        
+        messages.success(request, "申请已提交！请等待管理员审批。")
+        return redirect('index')
+    
+    context = {
+        'has_applied': application is not None and application.status == 'pending'
+    }
+    return render(request, 'joinus.html', context)
 
 
 # 加入/移出书架

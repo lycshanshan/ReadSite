@@ -63,6 +63,7 @@
 .btn-row { display: flex; gap: 10px; }
 
 .btn-sm {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     flex: 1;
     padding: 6px 0;
     text-align: center;

@@ -1,0 +1,37 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>申请成为创作者 (Staff) - Join Us</title>
+    <link rel="stylesheet" href="{% static 'css/common.css' %}">
+    <link rel="stylesheet" href="{% static 'css/joinus.css' %}">
+</head>
+<body>
+
+<div class="card">
+    <h2>加入我们 (Join Us)</h2>
+    
+    {% if has_applied %}
+        <div class="status-msg">
+            <p>您的申请正在审核中，请耐心等待管理员通过。</p>
+        </div>
+        <a href="{% url 'index' %}" class="btn btn-home" style="display: block;">返回首页</a>
+    {% else %}
+        <p class="desc">申请成为 Staff 后，您将进入管理后台，并拥有上传书籍、管理自己发布的章节和插图的权限。</p>
+        
+        <form method="POST" action="{% url 'joinus' %}">
+            {% csrf_token %}
+            <textarea name="reason" placeholder="请输入您的申请理由..." required></textarea>
+            
+            <div class="btn-group">
+                <a href="{% url 'index' %}" class="btn btn-home">返回首页</a>
+                <button type="submit" class="btn btn-submit">提交申请</button>
+            </div>
+        </form>
+    {% endif %}
+</div>
+
+</body>
+</html>
