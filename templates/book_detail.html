@@ -212,77 +212,95 @@
         }
     }
 
-    {% if book.illustration_count > 0 %}
-    // 有下载插图的函数
+    // 全局变量，用于保存下载所需的数据
     let g_textPrice = 0;
     let g_imgPrice = 0;
     let g_userPoint = 0;
     let g_illCount = 0;
+
     function checkDownload() {
-        // 从后台获取价格
         fetch("{% url 'book_download' book.id %}")
         .then(res => res.json())
         .then(data => {
             if (data.status === 'ok') {
-                g_textPrice = data.text_price;
-                g_imgPrice = data.img_price;
-                g_userPoint = data.user_point;
-                g_illCount = data.illustration_count;
+                g_textPrice = data.text_price || 0;
+                g_imgPrice = data.img_price || 0;
+                g_userPoint = data.user_point || 0;
+                g_illCount = data.illustration_count || 0;
 
-                document.getElementById('dl-word-count').innerText = (data.word_count / 10000).toFixed(1) + " 万字";
-                document.getElementById('dl-user-point').innerText = data.user_point;
+                // 渲染基础文本
+                const wordCountEl = document.getElementById('dl-word-count');
+                const userPointEl = document.getElementById('dl-user-point');
+                
+                if (wordCountEl) wordCountEl.innerText = (data.word_count / 10000).toFixed(1) + " 万字";
+                if (userPointEl) userPointEl.innerText = g_userPoint;
 
+                // 处理可能存在的插图 DOM
                 const illRow = document.getElementById('row-ill-count');
                 const illLabel = document.getElementById('lbl-img');
                 const illCheckbox = document.getElementById('chk-img');
                 const illSpan = document.getElementById('dl-ill-count');
+                const textCheckbox = document.getElementById('chk-text');
 
-                illSpan.innerText = g_illCount;
+                if (illSpan) illSpan.innerText = g_illCount;
 
-                if (g_illCount > 0) {
-                    illRow.style.display = 'block';
-                    illLabel.style.display = 'flex';
-                    illCheckbox.disabled = false;
-                } else {
-                    illRow.style.display = 'none';
-                    illLabel.style.display = 'none';
-                    illCheckbox.checked = false;
-                    illCheckbox.disabled = true;
+                if (illRow && illLabel && illCheckbox) {
+                    if (g_illCount > 0) {
+                        illRow.style.display = 'block';
+                        illLabel.style.display = 'flex';
+                        illCheckbox.disabled = false;
+                        illCheckbox.checked = false; // 默认不勾选插图
+                    } else {
+                        illRow.style.display = 'none';
+                        illLabel.style.display = 'none';
+                        illCheckbox.checked = false;
+                        illCheckbox.disabled = true;
+                    }
                 }
 
-                // 默认勾选正文，不勾选插图
-                document.getElementById('chk-text').checked = true;
-                if(g_illCount > 0) {
-                    document.getElementById('chk-img').checked = false; 
+                if (textCheckbox) {
+                    textCheckbox.checked = true; // 默认勾选正文
                 }
 
                 updateDownloadPrice();
                 dlModal.style.display = 'flex';
             }
-        });
+        })
+        .catch(error => console.error('Error fetching download info:', error));
     }
 
     function updateDownloadPrice() {
         const chkText = document.getElementById('chk-text');
         const chkImg = document.getElementById('chk-img');
-        const btnSubmit = document.getElementById('btn-dl-submit');
+        const btnSubmit = document.querySelector('#downloadForm button[type="submit"]') || document.getElementById('btn-dl-submit');
         const priceDisplay = document.getElementById('dl-price');
+
+        if (!btnSubmit) return;
 
         let totalPrice = 0;
         let isAnyChecked = false;
 
-        if (chkText.checked) {
-            totalPrice += g_textPrice;
-            isAnyChecked = true;
-        }
-        if (chkImg.checked) {
-            totalPrice += g_imgPrice;
+        // 如果页面上有复选框，则走有选择的逻辑；否则走一口价逻辑
+        if (chkText || chkImg) {
+            if (chkText && chkText.checked) {
+                totalPrice += g_textPrice;
+                isAnyChecked = true;
+            }
+            if (chkImg && chkImg.checked) {
+                totalPrice += g_imgPrice;
+                isAnyChecked = true;
+            }
+        } else {
+            totalPrice = g_textPrice;
             isAnyChecked = true;
         }
 
-        priceDisplay.innerText = totalPrice;
+        // 更新价格显示
+        if (priceDisplay) {
+            priceDisplay.innerText = totalPrice;
+        }
 
-        // 按钮状态逻辑
+        // 按钮状态判断逻辑
         if (!isAnyChecked) {
             btnSubmit.disabled = true;
             btnSubmit.innerText = "请选择内容";
@@ -300,35 +318,6 @@
             btnSubmit.style.cursor = "pointer";
         }
     }
-    {% else %}
-    // 无下载插图的函数
-    function checkDownload() {
-        fetch("{% url 'book_download' book.id %}")
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'ok') {
-                document.getElementById('dl-word-count').innerText = (data.word_count / 10000).toFixed(1) + " 万字";
-                document.getElementById('dl-price').innerText = data.text_price;
-                document.getElementById('dl-user-point').innerText = data.user_point;
-
-                const submitBtn = document.querySelector('#downloadForm button[type="submit"]');
-                if (data.user_point < data.price) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerText = "积分不足";
-                    submitBtn.style.backgroundColor = "#95a5a6";
-                    submitBtn.style.cursor = "not-allowed";
-                } else {
-                    submitBtn.disabled = false;
-                    submitBtn.innerText = "确认支付并下载";
-                    submitBtn.style.backgroundColor = "#3498db";
-                    submitBtn.style.cursor = "pointer";
-                }
-
-                dlModal.style.display = 'flex';
-            }
-        });
-    }
-    {% endif %}
 
     function sendReco() {
         fetch("{% url 'book_reco' book.id %}", {
@@ -342,7 +331,7 @@
         .then(res => res.json())
         .then(data => {
             if (data.status) {
-                document.getElementById('state-of-reco').innerText = data.status === 'ok' ? "Successful!" : "Failed!";
+                document.getElementById('state-of-reco').innerText = data.status === 'ok' ? "推荐成功！" : "推荐失败！";
                 document.getElementById('msg-from-reco').innerText = data.msg;
             }
             recoModal.style.display = 'flex';
@@ -384,6 +373,16 @@
         })
         .catch(error => console.error('Error:', error));
     }
+
+    // 点击弹窗外部遮罩层关闭弹窗
+    window.addEventListener('click', function(event) {
+        if (event.target === dlModal) {
+            dlModal.style.display = 'none';
+        }
+        if (event.target === recoModal) {
+            recoModal.style.display = 'none';
+        }
+    });
 </script>
 </body>
 </html>

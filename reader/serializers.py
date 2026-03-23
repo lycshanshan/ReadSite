@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from django.contrib.auth.models import User
 from .models import Book, Chapter, Illustration, GlobalSettings, Tag
 
@@ -28,6 +29,7 @@ class BookSerializer(serializers.ModelSerializer):
         # uploader (上传者) 字段设为只读，由 API 视图在 perform_create 时自动绑定当前用户，防止伪造。
         read_only_fields = ['id', 'tags', 'uploader', 'recos']
     
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_tags(self, obj):
         # 返回类似 ["魔法", "异世界"] 的格式
         return [tag.name for tag in obj.tags.all()]

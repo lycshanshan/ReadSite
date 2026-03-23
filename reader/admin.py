@@ -68,7 +68,7 @@ class BookAdmin(admin.ModelAdmin):
             '<a class="button" style="background-color:#2c3e50; color:white; padding:4px 8px; border-radius:4px;" href="{}/admin-download/">下载</a>',
             obj.pk
         )
-    download_button.short_description = "下载书籍"
+    download_button.short_description = "快捷操作"
     
     def get_urls(self):
         """注册后台路由"""

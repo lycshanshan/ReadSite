@@ -1,7 +1,4 @@
-import os
-import tempfile
-import zipfile
-from random import sample, randint
+from random import randint
 from urllib.parse import unquote
 
 from django.contrib import messages
@@ -10,9 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import JsonResponse, FileResponse, StreamingHttpResponse
+from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
-from django.utils.encoding import escape_uri_path
 from django.views.decorators.http import require_POST
 
 from .models import *
@@ -22,15 +18,20 @@ from .services import BookDownloadService
 def get_recommend_books(booklist):
     if len(booklist) <= 4:
         return booklist
+    
     rec = []
-    weight = [(i.recos + 0.1) * 10 for i in booklist]
-    big = sum(weight)
+    weight = [(idx, (obj.recos + 0.1) * 10) for idx, obj in enumerate(booklist)]
+
     while len(rec) < 4:
-        big_int = randint(0, big)
-        for i in range(len(booklist)):
-            big_int -= weight[i]
-            if big_int < 0:
-                rec.append(booklist[i])
+        total = int(sum(w[1] for w in weight))
+        big_int = randint(0, total)
+        for i in range(len(weight)):
+            idx, w = weight[i]
+            big_int -= w
+            if big_int <= 0:
+                rec.append(booklist[idx])
+                weight.pop(i)
+                break
     return rec
 
 def index(request):
@@ -231,11 +232,11 @@ def book_reco(request, book_id):
     if recos < 1:
         return JsonResponse({
             'status': 'fail',
-            'msg': 'Not Enough Recos!'
+            'msg': '您的推荐次数已耗尽！'
         })
 
     book.recos += 1
-    book.save()
+    book.save(update_fields=['recos'])
     user_points.reco_balance -= 1
     user_points.save()
 
@@ -527,7 +528,9 @@ def checkin(request):
         user_points.save()
         return JsonResponse({
             'status': 'success',
-            'msg': f'签到成功！积分+10，经验+10，推荐次数+{user_points.reco_balance - prev_reco}\n当前等级：{user_points.get_user_level_display()}\n当前推荐次数：{user_points.reco_balance}{' 已溢出!' if user_points.reco_balance >= 10 else ''}',
+            'msg': f"""签到成功！积分+10，经验+10，推荐次数+{user_points.reco_balance - prev_reco}
+            当前等级：{user_points.get_user_level_display()}
+            当前推荐次数：{user_points.reco_balance}{' 已溢出!' if user_points.reco_balance >= 10 else ''}""",
             'current_point': user_points.point,
             'current_reco': user_points.reco_balance,
             'current_level_str': f"{user_points.get_user_level_display()}({user_points.exp}/{user_points.next_level_exp})"

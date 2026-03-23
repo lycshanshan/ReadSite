@@ -1,5 +1,19 @@
 # Change Log
 
+## [0.3.2] 2026-03-24
+
+### Bug Fixes
+- Fixed the duplicate and choose-more-than-4-books problem of the Reco system.
+- Fixed the API docs problem that book-download can't run on the doc site.
+- Fixed the type warning in `serializers.py`.
+
+### Improvements
+- Optimized the `book_detail.html` code.
+
+### Future Features
+- [ ] Optimize Reco system.
+- [ ] Custom order criteria, filters and book groups.
+
 ## [0.3.1] 2026-03-23
 
 ### Bug Fixes
@@ -32,7 +46,7 @@ If you encounter a problem when importing it to MySQL, try to use this:
 ```bash
 python -X utf8 manage.py dumpdata reader.Tag reader.Book reader.Chapter reader.Illustration reader.UserProgress reader.Bookshelf reader.Bookmark reader.GlobalSettings reader.UserPoints reader.StaffApplication auth.user --exclude contenttypes --exclude auth.permission --natural-foreign --output datadump.json
 ```
-2. Create a MySQL database and change your `.env` file. (You can refer to [README](README))
+2. Create a MySQL database and change your `.env` file. (You can refer to [README](README.md))
 3. Run the following command to migrate data:
 ```bash
 python manage.py loaddata datadump.json

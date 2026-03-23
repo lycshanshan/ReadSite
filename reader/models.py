@@ -17,6 +17,7 @@ class Tag(models.Model):
         verbose_name = "标签"
         verbose_name_plural = verbose_name
 
+
 class Book(models.Model):
     """
     书籍模型 (Book)  
@@ -56,6 +57,7 @@ class Book(models.Model):
         verbose_name = "小说"
         verbose_name_plural = verbose_name
 
+
 class Chapter(models.Model):
     """
     章节模型 (Chapter)  
@@ -82,6 +84,7 @@ class Chapter(models.Model):
         verbose_name = "章节"
         verbose_name_plural = verbose_name
 
+
 class Illustration(models.Model):
     """
     插图模型 (Illustration)  
@@ -104,6 +107,7 @@ class Illustration(models.Model):
         ordering = ['book', 'index'] # 排序
         verbose_name = "插图"
         verbose_name_plural = verbose_name
+
 
 class UserProgress(models.Model):
     """
@@ -130,6 +134,7 @@ class UserProgress(models.Model):
         verbose_name = "阅读进度"
         verbose_name_plural = verbose_name
 
+
 class Bookshelf(models.Model):
     """
     书架/收藏模型 (Bookshelf)  
@@ -153,6 +158,7 @@ class Bookshelf(models.Model):
         verbose_name_plural = verbose_name
         ordering = ['-added_at']
 
+
 class Bookmark(models.Model):
     """
     书签模型 (Bookmark)  
@@ -175,6 +181,7 @@ class Bookmark(models.Model):
         verbose_name = "书签"
         verbose_name_plural = verbose_name
         ordering = ['-added_at']
+
 
 class GlobalSettings(models.Model):
     """

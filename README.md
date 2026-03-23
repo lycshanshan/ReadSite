@@ -132,8 +132,7 @@ python manage.py runserver
 
 1. **修改环境变量**：将 `.env` 中的 `DEBUG` 修改为 `False`。
 2. **配置 ALLOWED_HOSTS**：将你的服务器 IP 或域名加入 `ALLOWED_HOSTS` 和 `CSRF_TRUSTED_ORIGINS`。
-3. **更换数据库**：虽然 SQLite 适合轻量级使用，但在高并发下，建议在 `settings.py` 中更换为 **PostgreSQL** 或 **MySQL**。
-4. **使用 WSGI 服务器**：不要使用 `runserver` 运行生产环境。推荐使用 **Gunicorn** 作为应用服务器，并使用 **Nginx** 作为反向代理并处理 `/static/` 和 `/media/` 静态资源目录。
+3. **使用 WSGI 服务器**：不要使用 `runserver` 运行生产环境。推荐使用 **Gunicorn** 作为应用服务器，并使用 **Nginx** 作为反向代理并处理 `/static/` 和 `/media/` 静态资源目录。
 
 ```bash
 # Gunicorn 启动示例

@@ -1,17 +1,12 @@
-import base64
-
 from django.db.models import Max
-from django.utils.encoding import escape_uri_path
-from django.http import StreamingHttpResponse, FileResponse
 from django.contrib.auth.models import User
 
-from rest_framework import viewsets, status, serializers
+from rest_framework import viewsets, status, serializers, renderers
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.decorators import action
+from rest_framework.decorators import action, renderer_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes, inline_serializer
+from drf_spectacular.utils import extend_schema, OpenApiTypes, inline_serializer
 
 from .models import Book, Chapter, Illustration, GlobalSettings
 from .serializers import (
@@ -20,6 +15,19 @@ from .serializers import (
 )
 from .permissions import IsSuperUser, IsUploaderOrSuperUser
 from .services import BookDownloadService
+
+    
+class PassthroughRenderer(renderers.BaseRenderer):
+    """
+    透传渲染器：不做任何数据处理，直接返回。
+    用于绕过 DRF 的内容协商，允许直接返回 FileResponse 或 StreamingHttpResponse。
+    """
+    media_type = '*/*'
+    format = 'binary'
+    charset = None
+    render_style = 'binary'
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
 
 
 @extend_schema(tags=['书籍管理 (Admin)'])
@@ -83,7 +91,7 @@ class BookManageViewSet(viewsets.ModelViewSet):
         description="将整本书籍（含章节和插图）打包下载。若仅有文字，下载 TXT 文件; 否则下载 ZIP 文件。",
         responses={(200, 'application/octet-stream'): OpenApiTypes.BINARY}
     )
-    @action(detail=True, methods=['get'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['get'], permission_classes=[IsAdminUser], renderer_classes=[PassthroughRenderer])
     def download(self, request, pk=None):
         book = self.get_object()
         return BookDownloadService.generate_download_response(book, need_text=True, need_img=True)
