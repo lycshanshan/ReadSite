@@ -24,7 +24,7 @@
 - **后端框架**: Django 6.x
 - **API 框架**: Django REST Framework (DRF)
 - **数据库**: MySQL (mysqlclient)
-- **API 文档**: `drf-spectacular` (Swagger UI & Redoc)
+- **API 文档**: `drf-spectacular` (Swagger UI)
 - **环境变量**: `python-dotenv`
 
 ---
@@ -32,6 +32,7 @@
 ## 📁 核心数据模型与逻辑
 
 - **Book / Chapter / Illustration**: 书籍元数据、章节内容与插图，利用 Django Signals 自动统计总字数与插图总数。
+- **Tag**: 标签，存储当前存在的所有标签，与书籍绑定。
 - **UserProgress / Bookshelf / Bookmark**: 记录用户当前阅读到了哪一章，以及用户的个人书架和收藏夹。
 - **UserPoints**: 扩展内置 User，管理用户的积分 (Point)、经验值 (Exp) 和等级。
 - **GlobalSettings**: 全局设置，保证数据库中只有一条记录，控制整站级别的开关。
@@ -73,6 +74,40 @@ pip install -r requirements.txt
    ```
 5. 输入 `exit;` 退出控制台。
 
+### *使用 SQLite 数据库
+如果您需要使用旧版的SQLite数据库，只需修改 `settings.py` 中的配置项即可。
+
+在 `settings.py` 中找到如下代码段：
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        }
+    }
+}
+```
+
+将其修改为：
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+```
+
+随后进入步骤 5 即可。使用SQLite时，您**无需**手动创建数据库。此情况下，您也不需要在 `.env` 文件中填写MySQL相关配置项。
+
+此后，如您需要将数据库迁移至MySQL，请参见 [CHANGELOG](CHANGELOG.md) 中 0.3.0 版本相关内容。
+
 ### 5. 配置环境变量
 在项目根目录创建一个 `.env` 文件，填入以下内容：
 ```env
@@ -103,7 +138,7 @@ python manage.py migrate
 python manage.py collectstatic
 ```
 
-### 7. 创建超级管理员 (用于测试 API 和后台系统设置)
+### 7. 创建超级管理员
 ```bash
 python manage.py createsuperuser
 ```
@@ -121,7 +156,6 @@ python manage.py runserver
 项目集成了 `drf-spectacular`，启动服务后，管理员/开发者可通过以下地址查看和调试 API：
 
 - **Swagger UI (交互式文档)**: `http://127.0.0.1:8000/api/docs/`
-- **Redoc**: `http://127.0.0.1:8000/api/redoc/`
 - **OpenAPI Schema 下载**: `http://127.0.0.1:8000/api/schema/`
 
 ---

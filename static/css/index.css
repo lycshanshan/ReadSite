@@ -52,7 +52,7 @@
 }
 .list-header, .list-row {
     display: grid;
-    grid-template-columns: 3fr 2fr 1.5fr 1.5fr;
+    grid-template-columns: 3fr 2fr 2fr 1fr 1fr;
     padding: 15px 20px;
     align-items: center;
 }

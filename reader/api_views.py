@@ -95,6 +95,50 @@ class BookManageViewSet(viewsets.ModelViewSet):
     def download(self, request, pk=None):
         book = self.get_object()
         return BookDownloadService.generate_download_response(book, need_text=True, need_img=True)
+    
+    @extend_schema(
+        summary="批量下载书籍",
+        description="将多本书籍（含章节和插图）打包为一个 ZIP 文件下载。请在请求体中以 JSON 格式提供书籍 ID 列表。",
+        request=inline_serializer(
+            name="BatchDownloadRequest",
+            fields={
+                "ids": serializers.ListField(
+                    child=serializers.IntegerField(),
+                    help_text="书籍 ID 列表，例如: [1, 2, 3]",
+                    allow_empty=False
+                )
+            }
+        ),
+        responses={(200, 'application/zip'): OpenApiTypes.BINARY}
+    )
+    @action(detail=False, methods=['post'], url_path='batch-download', permission_classes=[IsAdminUser], renderer_classes=[PassthroughRenderer])
+    def batch_download(self, request):
+        raw_ids = request.data.get('ids')
+        ids = []
+
+        if isinstance(raw_ids, str):
+            try:
+                # 分割字符串并转为整数
+                ids = [int(i.strip()) for i in raw_ids.split(',') if i.strip()]
+            except ValueError:
+                return Response({"error": "ids 参数格式错误，必须是整数或逗号分隔的整数"}, status=status.HTTP_400_BAD_REQUEST)
+        elif isinstance(raw_ids, list):
+            ids = raw_ids
+        else:
+            return Response({"error": "缺少 ids 参数"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        books = self.get_queryset().filter(id__in=ids)
+        if not books.exists():
+            return Response(
+                {"detail": "未找到匹配的书籍，或您没有权限下载这些书籍。"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return BookDownloadService.generate_multi_books_download_response(
+            books, 
+            need_text=True, 
+            need_img=True
+        )
 
 
 @extend_schema(tags=['章节管理 (Admin)'])

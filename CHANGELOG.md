@@ -2,6 +2,10 @@
 
 ## [0.3.2] 2026-03-24
 
+### What's New
+- Now the Recos of a book can be shown on the index page.
+- Add `batch-download` API method, it accepts a list parameter and returns a `.zip` file.
+
 ### Bug Fixes
 - Fixed the duplicate and choose-more-than-4-books problem of the Reco system.
 - Fixed the API docs problem that book-download can't run on the doc site.
