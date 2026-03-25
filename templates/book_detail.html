@@ -51,7 +51,7 @@
         <div class="book-info">
             <div style="display: flex; align-items: baseline; gap: 15px; flex-wrap: wrap;">
                 <h1 class="book-title">{{ book.title }}</h1>
-                <a style="color: #666; font-size: 0.9em;" href="{% url 'library' %}?q={{ book.author }}">
+                <a style="color: #666; font-size: 0.9em;" href="{% url 'library' %}?q={{ book.author }}" target="_blank">
                     {{ book.author }}
                 </a>
             </div>
