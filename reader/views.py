@@ -500,40 +500,28 @@ def checkin(request):
     if created or user_points.last_checkin_time.date() != now.date():
         user_points.point += 10
         user_points.exp += 10
-        prev_reco = user_points.reco_balance
-        user_points.reco_balance += 1
         user_points.last_checkin_time = now
 
-        exp = user_points.exp
-        new_level = 'LV0'
-        if exp >= 1000:
-            new_level = 'LV6'
-            user_points.reco_balance += 3
-        elif exp >= 350:
-            new_level = 'LV5'
-            user_points.reco_balance += 2
-        elif exp >= 200:
-            new_level = 'LV4'
-            user_points.reco_balance += 1
-        elif exp >= 100:
-            new_level = 'LV3'
-        elif exp >= 50:
-            new_level = 'LV2'
-        elif exp >= 20:
-            new_level = 'LV1'
+        reco_get = 1
+        if user_points.user_level == '钻石会员':
+            reco_get += 3
+        elif user_points.user_level == '铂金会员':
+            reco_get += 2
+        elif user_points.user_level == '黄金会员':
+            reco_get += 1
 
+        user_points.reco_balance += reco_get
         user_points.reco_balance = min(user_points.reco_balance, 10)
 
-        user_points.user_level = new_level
         user_points.save()
         return JsonResponse({
             'status': 'success',
-            'msg': f"""签到成功！积分+10，经验+10，推荐次数+{user_points.reco_balance - prev_reco}
-            当前等级：{user_points.get_user_level_display()}
+            'msg': f"""签到成功！积分+10，经验+10，推荐次数+{reco_get}
+            当前等级：{user_points.user_level}
             当前推荐次数：{user_points.reco_balance}{' 已溢出!' if user_points.reco_balance >= 10 else ''}""",
             'current_point': user_points.point,
             'current_reco': user_points.reco_balance,
-            'current_level_str': f"{user_points.get_user_level_display()}({user_points.exp}/{user_points.next_level_exp})"
+            'current_level_str': f"{user_points.user_level}({user_points.exp}/{user_points.next_level_exp})"
         })
     else:
         return JsonResponse({'status': 'fail', 'msg': '今天已经签到过了，明天再来吧！'})

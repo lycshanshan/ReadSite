@@ -245,7 +245,6 @@ class UserPoints(models.Model):
     - `exp` (PositiveIntegerField): 经验值, 决定用户等级, 只增不减, 默认0。
     - `reco_balance` (PositiveIntegerField): 推荐数, 当前用户拥有的推荐数量。
     - `last_checkin_time` (DateTimeField): 上次签到时间, 用于校验每日签到状态。
-    - `user_level` (CharField): 当前会员等级枚举(LV0到LV6), 基于经验值变动。
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="用户")
     point = models.PositiveIntegerField(default=0, verbose_name="积分")
@@ -253,33 +252,27 @@ class UserPoints(models.Model):
     reco_balance = models.PositiveIntegerField(default=0, verbose_name="Recos")
     last_checkin_time = models.DateTimeField(default=timezone.now, verbose_name="上次签到时间")
 
-    LEVEL_CHOICES = [
-        ('LV0', '普通用户'),
-        ('LV1', '黑铁会员'),
-        ('LV2', '青铜会员'),
-        ('LV3', '白银会员'),
-        ('LV4', '黄金会员'),
-        ('LV5', '铂金会员'),
-        ('LV6', '钻石会员'),
-    ]
-    user_level = models.CharField(
-        max_length=10, 
-        choices=LEVEL_CHOICES, 
-        default='LV0',  
-        verbose_name="会员等级"
-    )
-
     def __str__(self):
-        return f"{self.user.username} - {self.get_user_level_display()}"
+        return f"{self.user.username} - {self.user_level}"
     
     @property
+    def user_level(self):
+        if self.exp >= 1000: return '钻石会员'
+        elif self.exp >= 350: return '铂金会员'
+        elif self.exp >= 200: return '黄金会员'
+        elif self.exp >= 100: return '白银会员'
+        elif self.exp >= 50: return '青铜会员'
+        elif self.exp >= 20: return '黑铁会员'
+        return '普通用户'
+
+    @property
     def next_level_exp(self):
-        if self.exp <= 20: return 20
-        if self.exp <= 50: return 50
-        if self.exp <= 100: return 100
-        if self.exp <= 200: return 200
-        if self.exp <= 350: return 350
-        if self.exp <= 1000: return 1000
+        if self.exp < 20: return 20
+        if self.exp < 50: return 50
+        if self.exp < 100: return 100
+        if self.exp < 200: return 200
+        if self.exp < 350: return 350
+        if self.exp < 1000: return 1000
         return "Max"
 
     class Meta:

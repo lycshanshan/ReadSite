@@ -29,7 +29,7 @@ class BookAdmin(admin.ModelAdmin):
         """普通 Staff 不能修改 uploader 字段，字数等统计字段强制只读"""
         readonly = ['word_count', 'illustration_count']
         if not request.user.is_superuser:
-            readonly.append('uploader')
+            readonly.extend(['uploader', 'recos'])
         return readonly
 
     def has_module_permission(self, request):

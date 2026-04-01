@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.3.3] 2026-04-02
+
+### Bug Fixes
+- Fixed the bug that `reco` field of `Book` can be changed by staff in `/admin` page. ([Issue #8](https://github.com/lycshanshan/ReadSite/issues/8))
+
+### Improvements
+- Change the `user_level` field of `UserPoints` to a property, tying to `exp`.
+
 ## [0.3.2] 2026-03-24
 
 ### What's New

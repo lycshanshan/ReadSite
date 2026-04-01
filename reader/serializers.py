@@ -7,8 +7,8 @@ from .models import Book, Chapter, Illustration, GlobalSettings, Tag
 class BookSerializer(serializers.ModelSerializer):
     """
     书籍模型序列化器。  
-    字段：`id`, `title`, `author`, `description`, `cover`, `tags`, `tag_names`, `uploader`  
-    只读字段：`id`, `uploader`, `tags`  
+    字段：`id`, `title`, `author`, `description`, `cover`, `tags`, `tag_names`, `uploader`, `recos`  
+    只读字段：`id`, `uploader`, `tags`, `recos`  
     只写字段：`tag_names`
     - `tag_names` 字段接收传来的列表并处理标签的创建与绑定; `tag` 字段用于接口返回。
     """
