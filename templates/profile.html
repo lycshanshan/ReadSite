@@ -22,7 +22,7 @@
             </div>
             <div class="info-row">
                 <span class="label">当前推荐数</span> 
-                <span class="value" id="point-display" style="color: #e67e22;">{{ user_points.reco_balance }}</span>
+                <span class="value" id="reco-display" style="color: #e67e22;">{{ user_points.reco_balance }}</span>
             </div>
             <div class="info-row">
                 <span class="label">当前积分</span> 
@@ -100,6 +100,7 @@
             .then(data => {
                 if(data.status === 'success') {
                     showMsg('🎉 签到成功', data.msg);
+                    document.getElementById('reco-display').textContent = data.current_reco;
                     document.getElementById('point-display').textContent = data.current_point;
                     document.getElementById('level-display').textContent = data.current_level_str;
                 } else {

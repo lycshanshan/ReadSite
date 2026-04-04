@@ -8,6 +8,7 @@
 
 ### Bug Fixes
 - Fixed the N+1 query problem in `my_bookshelf` view.
+- Fixed the Reco display bug after checkin.
 
 ### Improvements
 - Optimized the style of the confirm-download modal.
