@@ -83,13 +83,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
-        'PORT': os.getenv('DB_PORT', '3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        }
+        # ...
     }
 }
 ```
@@ -104,9 +98,9 @@ DATABASES = {
 }
 ```
 
-随后进入步骤 5 即可。使用SQLite时，您**无需**手动创建数据库。此情况下，您也不需要在 `.env` 文件中填写MySQL相关配置项。
+随后进入步骤 5 即可。使用SQLite时，您**无需**手动创建数据库，也不需要在 `.env` 文件中填写MySQL相关配置项。
 
-此后，如您需要将数据库迁移至MySQL，请参见 [CHANGELOG](CHANGELOG.md) 中 0.3.0 版本相关内容。
+此后，如您需要将数据库迁移至MySQL，请参看 [CHANGELOG](CHANGELOG.md) 中 0.3.0 版本相关内容。
 
 ### 5. 配置环境变量
 在项目根目录创建一个 `.env` 文件，填入以下内容：
