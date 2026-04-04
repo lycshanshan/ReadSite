@@ -80,6 +80,25 @@ body {font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
     background: #34495e;
 }
 
+.reco-modal-input {
+    width: 52px;
+    text-align: center;
+    line-height: 36px;
+    font-size: 1.1em;
+    font-weight: bold;
+    background: #f9f9f9;
+    border-right: 1px solid #ccc;
+}
+
+.reco-modal-btn {
+    width: 28px; height: 18px;
+    border: none;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.65em;
+    line-height: 1;
+}
+
 .chapter-list {
     max-width: 1200px;
     margin: 40px auto;
@@ -160,7 +179,7 @@ body {font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
 }
 
 .modal-actions {
-    flex-direction: column;
+    flex-direction: row;
     align-items: center; 
 }
 

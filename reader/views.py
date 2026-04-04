@@ -1,7 +1,9 @@
+import json
 from random import randint
 from urllib.parse import unquote
 
 from django.contrib import messages
+from django.utils import timezone
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -50,13 +52,8 @@ def index(request):
         recommended_books = []
     else:
         book_list = Book.objects.all().order_by('-recos')
-
-        if book_list.count() <= 4:
-            recommended_books = list(book_list)
-
         # 推荐书籍取用逻辑：取前四本推荐书籍，若不满四本则从其他书籍中随机抽取，尽可能填满4本
         recommended_books = get_recommend_books(list(book_list))
-
         is_search = False
 
     paginator = Paginator(book_list, 20)
@@ -215,34 +212,54 @@ def book_download(request, book_id):
     })
 
 
+@login_required
 def book_reco(request, book_id):
     book = get_object_or_404(Book, pk=book_id)
-    user_points, created = UserPoints.objects.get_or_create(user=request.user)
+    user_points, _ = UserPoints.objects.get_or_create(user=request.user)
+    today = timezone.localdate()
+    log, _ = BookRecoLog.objects.get_or_create(user=request.user, book=book, date=today)
+
+    daily_remaining = 4 - log.count
+    max_reco = min(user_points.reco_balance, daily_remaining)
 
     if request.method != 'POST':
         return JsonResponse({
             'status': 'ok',
             'user_recos': user_points.reco_balance,
             'cur_bookreco': book.recos,
-            'reco_able': user_points.reco_balance > 0,
+            'daily_sent': log.count,
+            'daily_remaining': daily_remaining,
+            'max_reco': max_reco,
+            'reco_able': max_reco > 0,
         })
 
-    recos = user_points.reco_balance
+    try:
+        data = json.loads(request.body)
+        count = int(data.get('count', 1))
+    except (json.JSONDecodeError, ValueError, TypeError):
+        count = 1
 
-    if recos < 1:
-        return JsonResponse({
-            'status': 'fail',
-            'msg': '您的推荐次数已耗尽！'
-        })
+    if count < 1:
+        return JsonResponse({'status': 'fail', 'msg': '推荐数量不能小于1！'})
+    if count > 4:
+        return JsonResponse({'status': 'fail', 'msg': '单次推荐不能超过4个！'})
+    if user_points.reco_balance < count:
+        return JsonResponse({'status': 'fail', 'msg': f'您的推荐次数不足，当前剩余 {user_points.reco_balance} 个。'})
+    if daily_remaining < count:
+        return JsonResponse({'status': 'fail', 'msg': f'今日对本书推荐已达上限，今日还可投 {daily_remaining} 个。'})
 
-    book.recos += 1
+    book.recos += count
     book.save(update_fields=['recos'])
-    user_points.reco_balance -= 1
+    user_points.reco_balance -= count
     user_points.save()
+    log.count += count
+    log.save()
 
     return JsonResponse({
         'status': 'ok',
-        'msg': f'推荐成功！\n当前书籍拥有 {book.recos} 个推荐。\n您当前剩余 {user_points.reco_balance} 次推荐机会！'
+        'msg': f'成功投出 {count} 个推荐！\n本书共获得 {book.recos} 个推荐。\n您当前剩余 {user_points.reco_balance} 次推荐机会。',
+        'user_recos': user_points.reco_balance,
+        'daily_remaining': 4 - log.count,
     })
 
 
@@ -388,9 +405,11 @@ def my_bookshelf(request):
 
     # 查询阅读进度
     books_with_progress = []
+    book_ids = [item.book_id for item in shelf_items]
+    progresses = {p.book_id: p for p in UserProgress.objects.filter(user=request.user, book_id__in=book_ids)}
     for item in shelf_items:
         book = item.book
-        progress = UserProgress.objects.filter(user=request.user, book=book).first()
+        progress = progresses.get(book.id)
         books_with_progress.append({
             'book': book,
             'progress': progress,
@@ -442,6 +461,7 @@ def joinus(request):
 
 # 加入/移出书架
 @login_required
+@require_POST
 def toggle_bookshelf(request, book_id):
     """
     切换加入/移出书架状态（Toggle逻辑）。
@@ -457,17 +477,15 @@ def toggle_bookshelf(request, book_id):
         Bookshelf.objects.create(user=request.user, book=book)
         in_bookshelf = True
 
-    # 如果是 POST 请求，说明是前端 JS 发起的 AJAX，返回 JSON, 否则跳转回上一页
-    if request.method == 'POST':
-        return JsonResponse({
-            'status': 'success',
-            'in_bookshelf': in_bookshelf,
-            'msg': "已加入书架" if in_bookshelf else "已移出书架"
-        })
-    return redirect(request.META.get('HTTP_REFERER', 'index'))
+    return JsonResponse({
+        'status': 'success',
+        'in_bookshelf': in_bookshelf,
+        'msg': "已加入书架" if in_bookshelf else "已移出书架"
+    })
 
 
 @login_required
+@require_POST
 def toggle_bookmark(request, chapter_id):
     """
     切换加入/移出书签状态，逻辑与书架相同。
@@ -482,13 +500,11 @@ def toggle_bookmark(request, chapter_id):
         Bookmark.objects.create(user=request.user, chapter=chapter)
         in_bookmark = True
 
-    if request.method == 'POST':
-        return JsonResponse({
-            'status': 'success',
-            'in_bookmark': in_bookmark,
-            'msg': "已加入书签" if in_bookmark else "已移除书签"
-        })
-    return redirect(request.META.get('HTTP_REFERER', 'index'))
+    return JsonResponse({
+        'status': 'success',
+        'in_bookmark': in_bookmark,
+        'msg': "已加入书签" if in_bookmark else "已移除书签"
+    })
 
 
 @login_required

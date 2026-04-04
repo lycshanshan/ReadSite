@@ -1,5 +1,23 @@
 # Change Log
 
+## [0.3.4] 2026-04-04
+
+### What's New
+- Optimized the Reco system, now a user can only vote 4 Recos to a book in one day.
+- Optimized the Reco experience, now users can vote multiple Recos once.
+
+### Bug Fixes
+- Fixed the N+1 query problem in `my_bookshelf` view.
+
+### Improvements
+- Optimized the style of the confirm-download modal.
+- Changed Django language to `zh-hans`.
+- Changed Django time zone to `UTC+8`.
+
+### Future Features
+- [x] Optimize Reco system.
+- [ ] Custom order criteria, filters and book groups.
+
 ## [0.3.3] 2026-04-02
 
 ### Bug Fixes
@@ -7,6 +25,10 @@
 
 ### Improvements
 - Change the `user_level` field of `UserPoints` to a property, tying to `exp`.
+
+### Future Features
+- [ ] Optimize Reco system.
+- [ ] Custom order criteria, filters and book groups.
 
 ## [0.3.2] 2026-03-24
 

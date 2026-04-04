@@ -149,17 +149,17 @@
     <div id="downloadModal" class="modal">
         <div class="modal-content">
             <h3 style="color: #2c3e50;">下载确认</h3>
-            <div style="text-align: left; margin: 20px 0; line-height: 1.8;">
+            <div style="text-align: left; margin: 14px 0; line-height: 2;">
                 <p>书籍：<strong>{{ book.title }}</strong></p>
-                <p>字数：<span id="dl-word-count">加载中...</span></p>
+                <p>字数：<strong id="dl-word-count">加载中...</strong> 万字</p>
                 {% if book.illustration_count > 0 %}
-                <p id="row-ill-count" style="display: none;">插图：<span id="dl-ill-count">0</span> 张</p>
+                <p id="row-ill-count" style="display: none;">插图：<strong id="dl-ill-count">0</strong> 张</p>
                 {% endif %}
-                <p>所需积分：<strong id="dl-price" style="color: #e74c3c; font-size: 1.2em;">0</strong></p>
-                <p style="font-size: 0.9em; color: #666;">您的当前积分：<span id="dl-user-point">--</span></p>
+                <p>所需积分：<strong id="dl-price" style="color: #e74c3c;">0</strong></p>
+                <p>您的当前积分：<strong id="dl-user-point">--</strong></p>
             </div>
 
-            <form id="downloadForm" action="{% url 'book_download' book.id %}" method="post" class="modal-actions">
+            <form id="downloadForm" action="{% url 'book_download' book.id %}" method="post">
                 {% csrf_token %}
 
                 {% if book.illustration_count > 0 %}
@@ -175,9 +175,9 @@
                     </label>
                 </div>
                 {% endif %}
-                <div>
+                <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeModal('downloadModal')">取消</button>
-                    <button type="submit" id="btn-dl-submit" class="btn-confirm" style="background-color: #3498db;">确认支付并下载</button>
+                    <button type="submit" id="btn-dl-submit" class="btn-confirm">确认支付并下载</button>
                 </div>
             </form>
         </div>
@@ -185,16 +185,39 @@
 
     <div id="recoModal" class="modal">
         <div class="modal-content">
-            <h3 style="color: #2c3e50;" id="state-of-reco">--</h3>
-            <div style="text-align: center; margin: 20px 0; line-height: 1.8;">
-                <p id="msg-from-reco">--</p>
+            <h3 style="color: #2c3e50;" id="state-of-reco">推荐本书</h3>
+
+            <!-- 选择阶段 -->
+            <div id="reco-select-panel">
+                <div style="text-align: center; margin: 14px 0; line-height: 2; color: #555;">
+                    <p>您当前剩余推荐：<strong id="reco-balance-display">--</strong> 个</p>
+                    <p>今日对本书还可投：<strong id="reco-daily-display">--</strong> 个</p>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0 20px;">
+                    <span style="color: #555;">投出数量：</span>
+                    <div style="display: flex; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; user-select: none;">
+                        <div id="reco-count-display" class="reco-modal-input">1</div>
+                        <div style="display: flex; flex-direction: column;">
+                            <button type="button" class="reco-modal-btn" onclick="adjustRecoCount(1)" style="border-bottom: 1px solid #ccc;">▲</button>
+                            <button type="button" class="reco-modal-btn" onclick="adjustRecoCount(-1)">▼</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('recoModal')">取消</button>
+                    <button type="button" id="btn-reco-confirm" class="btn-confirm" onclick="confirmReco()">确认推荐</button>
+                </div>
             </div>
-            <form id="recoForm" action="{% url 'book_reco' book.id %}" method="post" class="modal-actions">
-                {% csrf_token %}
-                <div>
+
+            <!-- 结果阶段 -->
+            <div id="reco-result-panel" style="display:none;">
+                <div style="text-align: center; margin: 20px 0; line-height: 1.8;">
+                    <p id="msg-from-reco" style="white-space: pre-line;">--</p>
+                </div>
+                <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeModal('recoModal')">关闭</button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -232,7 +255,7 @@
                 const wordCountEl = document.getElementById('dl-word-count');
                 const userPointEl = document.getElementById('dl-user-point');
                 
-                if (wordCountEl) wordCountEl.innerText = (data.word_count / 10000).toFixed(1) + " 万字";
+                if (wordCountEl) wordCountEl.innerText = (data.word_count / 10000).toFixed(1);
                 if (userPointEl) userPointEl.innerText = g_userPoint;
 
                 // 处理可能存在的插图 DOM
@@ -314,27 +337,62 @@
         } else {
             btnSubmit.disabled = false;
             btnSubmit.innerText = "确认支付并下载";
-            btnSubmit.style.backgroundColor = "#3498db";
+            btnSubmit.style.backgroundColor = "";
             btnSubmit.style.cursor = "pointer";
         }
     }
 
+    let g_recoMax = 1;
+    let g_recoCount = 1;
+
     function sendReco() {
+        // 先 GET 拉取最新状态，再展示选择面板
+        fetch("{% url 'book_reco' book.id %}")
+        .then(res => res.json())
+        .then(data => {
+            if (!data.reco_able) {
+                document.getElementById('state-of-reco').innerText = '无法推荐';
+                document.getElementById('reco-select-panel').style.display = 'none';
+                document.getElementById('reco-result-panel').style.display = 'block';
+                document.getElementById('msg-from-reco').innerText =
+                    data.daily_remaining === 0 ? '今日对本书的推荐已达上限（4个/天）。' : '您的推荐次数已耗尽！';
+                recoModal.style.display = 'flex';
+                return;
+            }
+            g_recoMax = data.max_reco;
+            g_recoCount = 1;
+            document.getElementById('state-of-reco').innerText = '推荐本书';
+            document.getElementById('reco-balance-display').innerText = data.user_recos;
+            document.getElementById('reco-daily-display').innerText = data.daily_remaining;
+            document.getElementById('reco-count-display').innerText = 1;
+            document.getElementById('reco-select-panel').style.display = 'block';
+            document.getElementById('reco-result-panel').style.display = 'none';
+            recoModal.style.display = 'flex';
+        });
+    }
+
+    function adjustRecoCount(delta) {
+        const next = g_recoCount + delta;
+        if (next < 1 || next > g_recoMax) return;
+        g_recoCount = next;
+        document.getElementById('reco-count-display').innerText = g_recoCount;
+    }
+
+    function confirmReco() {
         fetch("{% url 'book_reco' book.id %}", {
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token }}',
-                'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/json'
             },
+            body: JSON.stringify({ count: g_recoCount })
         })
         .then(res => res.json())
         .then(data => {
-            if (data.status) {
-                document.getElementById('state-of-reco').innerText = data.status === 'ok' ? "推荐成功！" : "推荐失败！";
-                document.getElementById('msg-from-reco').innerText = data.msg;
-            }
-            recoModal.style.display = 'flex';
+            document.getElementById('state-of-reco').innerText = data.status === 'ok' ? '推荐成功！' : '推荐失败';
+            document.getElementById('msg-from-reco').innerText = data.msg;
+            document.getElementById('reco-select-panel').style.display = 'none';
+            document.getElementById('reco-result-panel').style.display = 'block';
         });
     }
 

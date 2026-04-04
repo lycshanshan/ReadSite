@@ -280,6 +280,31 @@ class UserPoints(models.Model):
         verbose_name_plural = verbose_name
 
 
+class BookRecoLog(models.Model):
+    """
+    推荐记录 (BookRecoLog)
+    记录用户每天对每本书的推荐投票数，用于限制每日上限（最多4个/书/天）。
+
+    字段说明：
+    - `user` (ForeignKey to User): 投票的用户, 级联删除。
+    - `book` (ForeignKey to Book): 被投票的书籍, 级联删除。
+    - `date` (DateField): 投票日期, 仅记录年月日。
+    - `count` (PositiveSmallIntegerField): 当日已投推荐数, 默认0。
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="用户")
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="书籍")
+    date = models.DateField(verbose_name="日期")
+    count = models.PositiveSmallIntegerField(default=0, verbose_name="当日已投推荐数")
+
+    class Meta:
+        unique_together = ('user', 'book', 'date')
+        verbose_name = "每日推荐记录"
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f"{self.user.username} → {self.book.title} ({self.date}): {self.count}"
+
+
 class StaffApplication(models.Model):
     """
     员工申请 (StaffApplication)
