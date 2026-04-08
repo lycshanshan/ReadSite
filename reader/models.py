@@ -11,8 +11,10 @@ class Tag(models.Model):
     - `name` (CharField): 标签名, 最大长度50。
     """
     name = models.CharField(max_length=50, unique=True, verbose_name="标签名称")
+
     def __str__(self):
         return self.name
+    
     class Meta:
         verbose_name = "标签"
         verbose_name_plural = verbose_name
@@ -28,7 +30,7 @@ class Book(models.Model):
     - `author` (CharField): 作者名, 最大长度100, 默认"未知"。
     - `cover` (ImageField): 封面图片, 上传至'covers/'目录, 允许为空。
     - `description` (TextField): 小说简介说明, 允许为空。
-    - `tags` (ManyToManyField): 作品标签, 允许为空。
+    - `tags` (ManyToManyField to Tag): 作品标签, 允许为空。
     - `word_count` (PositiveIntegerField): 总字数, 由信号机制自动统计, 默认0。
     - `illustration_count` (PositiveIntegerField): 插图数量, 由信号机制自动统计, 默认0。
     - `recos` (PositiveIntegerField): 推荐数, 这本书收到的推荐数量。
@@ -46,7 +48,7 @@ class Book(models.Model):
     illustration_count = models.PositiveIntegerField(default=0, verbose_name="插图数量")
 
     recos = models.PositiveIntegerField(default=0, verbose_name="Reco数")
-    created_at = models.DateTimeField(auto_now=True, verbose_name="收录时间")
+    created_at = models.DateTimeField(auto_now=True, verbose_name="更新时间") # 历史问题, 更名需要的修改过多
     uploader = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="上传者")
 
     def __str__(self):
@@ -104,8 +106,35 @@ class Illustration(models.Model):
         return f"{self.book.title} - {self.volume_name} - {self.index}"
 
     class Meta:
-        ordering = ['book', 'index'] # 排序
+        ordering = ['book', 'index']
         verbose_name = "插图"
+        verbose_name_plural = verbose_name
+
+
+class BookGroup(models.Model):
+    """
+    书单模型 (BookGroup)  
+    管理用户创建的书单列表, 每一个条目对应一个书单。
+
+    字段说明：
+    - `name` (CharField): 书单名称, 最大长度50。
+    - `description` (TextField): 书单简介, 允许为空。
+    - `books` (ManyToManyField to Book): 书单包含的书籍列表, 允许为空。
+    - `updated_at` (DateTimeField): 书单更新时间, 自动生成, 用于书单列表排序。
+    - `uploader` (ForeignKey to User): 创建该书单的用户, 允许为空, 级联设置为NULL。
+    """
+    name = models.CharField(max_length=50, unique=True, verbose_name="书单名称")
+    description = models.TextField(verbose_name="简介", blank=True)
+    books = models.ManyToManyField(Book, verbose_name="书籍", blank=True)
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
+    uploader = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="创建者")
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        ordering = ['-updated_at']
+        verbose_name = "书单"
         verbose_name_plural = verbose_name
 
 

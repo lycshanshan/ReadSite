@@ -26,7 +26,7 @@
             <span>你好, <a href="{% url 'profile' %}" class="nav-link" style="font-weight: bold;">{{ user.username }}</a></span>
             <span style="opacity: 0.5">|</span>
             <a href="{% url 'my_bookshelf' %}" class="nav-link">我的书架</a>
-            
+
             <form action="{% url 'logout' %}" method="post" style="display: inline;">
                 {% csrf_token %}
                 <button type="submit" class="btn-outline">退出</button>
@@ -35,25 +35,60 @@
     </nav>
 
     <div class="layout-container">
-        <!-- 标签筛选 -->
+        <!-- 侧边栏 -->
         <aside class="sidebar">
-            <div class="sidebar-title">
-                分类标签
-                <span class="clear-tags" id="clear-tags-btn" style="display: none;" onclick="clearTags()">清除筛选</span>
-            </div>
-            <div class="tag-list" id="tag-container">
-                {% for tag in tags %}
-                <div class="tag-item" data-tag="{{ tag.name }}" onclick="toggleTag(this)">
-                    {{ tag.name }}
-                </div>
+
+            <!-- 书单 -->
+            {% if book_groups %}
+            <div class="sidebar-section" onclick="toggleSection(this)"><span>书单</span><span class="section-arrow">▾</span></div>
+            <div class="group-list" id="group-container">
+                <div class="group-item {% if not group_id %}active{% endif %}" data-group="" onclick="selectGroup(this)">全部书籍</div>
+                {% for group in book_groups %}
+                <div class="group-item {% if group_id == group.id|stringformat:'s' %}active{% endif %}" data-group="{{ group.id }}" onclick="selectGroup(this)">{{ group.name }}</div>
                 {% endfor %}
             </div>
+            {% endif %}
+
+            <!-- 排序 -->
+            <div class="sidebar-section" onclick="toggleSection(this)"><span>排序方式</span><span class="section-arrow">▾</span></div>
+            <div class="sort-options">
+                <button class="sort-btn {% if sort == 'updated' %}active{% endif %}" data-sort="updated" onclick="selectSort(this)">更新时间</button>
+                <button class="sort-btn {% if sort == 'recos' %}active{% endif %}" data-sort="recos" onclick="selectSort(this)">推荐数</button>
+                <button class="sort-btn {% if sort == 'word_count' %}active{% endif %}" data-sort="word_count" onclick="selectSort(this)">字数</button>
+                <button class="sort-order-btn" id="order-btn" onclick="toggleOrder()" title="切换升降序">{% if order == 'asc' %}↑ 升序{% else %}↓ 降序{% endif %}</button>
+            </div>
+
+            <!-- 标签（左键包含，右键排除） -->
+            <div class="sidebar-section" onclick="toggleSection(this)"><span>标签筛选</span><span class="section-arrow">▾</span></div>
+            <div class="tag-list" id="tag-container">
+                {% for tag in tags %}
+                <div class="tag-item" data-tag="{{ tag.name }}"
+                     onclick="handleTagClick(event, this)"
+                     oncontextmenu="handleTagRightClick(event, this)"
+                     title="左键包含 / 右键排除">{{ tag.name }}</div>
+                {% endfor %}
+            </div>
+            <!-- <div class="tag-hint">左键包含 &nbsp;·&nbsp; 右键排除</div> -->
+
+            <!-- 清除全部 -->
+            <button class="clear-all-btn" id="clear-all-btn" onclick="clearAll()" style="display:none;">清除全部筛选</button>
         </aside>
 
         <!-- 书籍列表 -->
         <main class="main-content">
+
+            <!-- 书单 Banner -->
+            {% if selected_group %}
+            <div class="group-banner">
+                <div class="group-banner-name">{{ selected_group.name }}</div>
+                {% if selected_group.description %}
+                <div class="group-banner-desc">{{ selected_group.description }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <div class="shelf-grid">
-                {% for book in books %}
+                {% for book in page_obj %}
                 <div class="shelf-card">
                     <a href="{% url 'book_detail' book.id %}" target="_blank">
                         {% if book.cover %}
@@ -75,7 +110,7 @@
                         <div class="btn-row">
                             <a href="{% url 'book_detail' book.id %}" class="btn-sm btn-read" target="_blank">查看详情</a>
                             {% if user.is_authenticated %}
-                                <button onclick="toggleBookshelf('{{ book.id }}', this)" 
+                                <button onclick="toggleBookshelf('{{ book.id }}', this)"
                                    class="btn-sm {% if book.id in user_bookshelf_ids %}btn-remove{% else %}btn-read{% endif %}"
                                    style="{% if book.id not in user_bookshelf_ids %}background-color: #27ae60;{% endif %}">
                                     {% if book.id in user_bookshelf_ids %}移出书架{% else %}加入书架{% endif %}
@@ -90,74 +125,183 @@
                 </div>
                 {% endfor %}
             </div>
+
+            <!-- 分页 -->
+            {% if page_obj.has_other_pages %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="javascript:void(0)" onclick="goToPage({{ page_obj.previous_page_number }})" class="page-link">&laquo; 上一页</a>
+                {% else %}
+                    <span class="page-disabled">&laquo; 上一页</span>
+                {% endif %}
+
+                <span class="page-current">第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+
+                {% if page_obj.has_next %}
+                    <a href="javascript:void(0)" onclick="goToPage({{ page_obj.next_page_number }})" class="page-link">下一页 &raquo;</a>
+                {% else %}
+                    <span class="page-disabled">下一页 &raquo;</span>
+                {% endif %}
+            </div>
+            {% endif %}
         </main>
     </div>
 
     <script>
-        // 页面加载时, 从 URL 中读取 tags 参数，并恢复高亮选中状态
+        let currentSort = '{{ sort }}';
+        let currentOrder = '{{ order }}';
+        let currentGroupId = '{{ group_id }}';
+
+        // 页面加载时恢复标签选中状态
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
+
             const tagsParam = urlParams.get('tags');
-            
             if (tagsParam) {
-                const activeTags = tagsParam.split(',');
-                document.querySelectorAll('.tag-item').forEach(el => {
-                    if (activeTags.includes(el.getAttribute('data-tag'))) {
-                        el.classList.add('active');
-                    }
+                const includes = tagsParam.split(',');
+                document.querySelectorAll('#tag-container .tag-item').forEach(el => {
+                    if (includes.includes(el.getAttribute('data-tag'))) el.classList.add('include');
                 });
-                document.getElementById('clear-tags-btn').style.display = 'block';
             }
+
+            const excludeParam = urlParams.get('exclude_tags');
+            if (excludeParam) {
+                const excludes = excludeParam.split(',');
+                document.querySelectorAll('#tag-container .tag-item').forEach(el => {
+                    if (excludes.includes(el.getAttribute('data-tag'))) el.classList.add('exclude');
+                });
+            }
+
+            updateClearAllBtn();
         });
 
-        // 筛选逻辑：组合当前搜索词和激活的标签，然后跳转
-        function applyFilters() {
+        // ── 标签交互 ──────────────────────────────────────────
+        // 左键：已激活（include 或 exclude）→ 取消；未激活 → include
+        function handleTagClick(event, el) {
+            if (el.classList.contains('include') || el.classList.contains('exclude')) {
+                el.classList.remove('include', 'exclude');
+            } else {
+                el.classList.add('include');
+            }
+            applyFilters();
+        }
+
+        // 右键：已激活（include 或 exclude）→ 取消；未激活 → exclude
+        function handleTagRightClick(event, el) {
+            event.preventDefault();
+            if (el.classList.contains('include') || el.classList.contains('exclude')) {
+                el.classList.remove('include', 'exclude');
+            } else {
+                el.classList.add('exclude');
+            }
+            applyFilters();
+        }
+
+        // ── 侧边栏折叠 ───────────────────────────────────────
+        function toggleSection(headerEl) {
+            const content = headerEl.nextElementSibling;
+            if (!content) return;
+            const arrow = headerEl.querySelector('.section-arrow');
+            const collapsed = content.style.display === 'none';
+            content.style.display = collapsed ? '' : 'none';
+            if (arrow) arrow.style.transform = collapsed ? '' : 'rotate(-90deg)';
+        }
+
+        // ── 筛选状态 ─────────────────────────────────────────
+        function hasActiveFilters() {
+            if (currentGroupId) return true;
+            if (document.querySelector('#tag-container .tag-item.include')) return true;
+            if (document.querySelector('#tag-container .tag-item.exclude')) return true;
+            if (document.getElementById('search-input').value.trim()) return true;
+            return false;
+        }
+
+        function updateClearAllBtn() {
+            document.getElementById('clear-all-btn').style.display = hasActiveFilters() ? 'block' : 'none';
+        }
+
+        // ── 跳转 ─────────────────────────────────────────────
+        function applyFilters(page) {
             const query = document.getElementById('search-input').value.trim();
-            const activeTags = [];
-            
-            document.querySelectorAll('.tag-item.active').forEach(el => {
-                activeTags.push(el.getAttribute('data-tag'));
+            const includeTags = [], excludeTags = [];
+            document.querySelectorAll('#tag-container .tag-item').forEach(el => {
+                if (el.classList.contains('include')) includeTags.push(el.getAttribute('data-tag'));
+                if (el.classList.contains('exclude')) excludeTags.push(el.getAttribute('data-tag'));
             });
 
             const urlParams = new URLSearchParams();
             if (query) urlParams.set('q', query);
-            if (activeTags.length > 0) urlParams.set('tags', activeTags.join(','));
+            if (includeTags.length > 0) urlParams.set('tags', includeTags.join(','));
+            if (excludeTags.length > 0) urlParams.set('exclude_tags', excludeTags.join(','));
+            if (currentSort && currentSort !== 'updated') urlParams.set('sort', currentSort);
+            if (currentOrder && currentOrder !== 'desc') urlParams.set('order', currentOrder);
+            if (currentGroupId) urlParams.set('group_id', currentGroupId);
+            if (page && page > 1) urlParams.set('page', page);
 
             window.location.href = "{% url 'library' %}?" + urlParams.toString();
         }
 
-        function toggleTag(element) {
-            element.classList.toggle('active');
+        function goToPage(pageNum) { applyFilters(pageNum); }
+
+        function selectSort(element) {
+            document.querySelectorAll('.sort-btn').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            currentSort = element.getAttribute('data-sort');
             applyFilters();
         }
 
-        function clearTags() {
-            document.querySelectorAll('.tag-item.active').forEach(el => {
-                el.classList.remove('active');
-            });
+        function toggleOrder() {
+            currentOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+            const btn = document.getElementById('order-btn');
+            btn.textContent = currentOrder === 'asc' ? '↑ 升序' : '↓ 降序';
             applyFilters();
         }
 
-        // 加入/移出书架的 AJAX 请求
+        function selectGroup(element) {
+            document.querySelectorAll('.group-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            currentGroupId = element.getAttribute('data-group');
+            applyFilters();
+        }
+
+        function clearAll() {
+            document.getElementById('search-input').value = '';
+            document.querySelectorAll('#tag-container .tag-item').forEach(el => el.classList.remove('include', 'exclude'));
+            currentGroupId = '';
+            currentSort = 'updated';
+            currentOrder = 'desc';
+            const orderBtn = document.getElementById('order-btn');
+            if (orderBtn) orderBtn.textContent = '↓ 降序';
+            const firstGroup = document.querySelector('.group-item[data-group=""]');
+            if (firstGroup) {
+                document.querySelectorAll('.group-item').forEach(el => el.classList.remove('active'));
+                firstGroup.classList.add('active');
+            }
+            document.querySelectorAll('.sort-btn').forEach(el => el.classList.remove('active'));
+            const updatedBtn = document.querySelector('.sort-btn[data-sort="updated"]');
+            if (updatedBtn) updatedBtn.classList.add('active');
+            applyFilters();
+        }
+
+        // ── 书架 AJAX ────────────────────────────────────────
         function toggleBookshelf(bookId, btnElement) {
-            const url = `/bookshelf/toggle/${bookId}/`;
-            fetch(url, {
-                method: 'POST', 
-                headers: { 
-                    'X-CSRFToken': '{{ csrf_token }}', 
-                    'X-Requested-With': 'XMLHttpRequest', 
-                    'Content-Type': 'application/json' 
+            fetch(`/bookshelf/toggle/${bookId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
                 },
             }).then(r => r.json()).then(data => {
                 if (data.status === 'success') {
                     if (data.in_bookshelf) {
                         btnElement.innerText = '移出书架';
                         btnElement.className = 'btn-sm btn-remove';
-                        btnElement.style.backgroundColor = ''; 
+                        btnElement.style.backgroundColor = '';
                     } else {
                         btnElement.innerText = '加入书架';
                         btnElement.className = 'btn-sm btn-read';
-                        btnElement.style.backgroundColor = '#27ae60'; 
+                        btnElement.style.backgroundColor = '#27ae60';
                     }
                 }
             });

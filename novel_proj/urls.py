@@ -30,6 +30,7 @@ router = DefaultRouter()
 router.register(r'admin/books', api_views.BookManageViewSet)
 router.register(r'admin/chapters', api_views.ChapterManageViewSet)
 router.register(r'admin/illustrations', api_views.IllustrationManageViewSet)
+router.register(r'admin/book-groups', api_views.BookGroupManageViewSet, basename='admin-book-groups')
 router.register(r'admin/settings', api_views.GlobalSettingsViewSet, basename='settings')
 router.register(r'admin/users', api_views.UserAdminViewSet)
 

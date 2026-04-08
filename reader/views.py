@@ -72,18 +72,32 @@ def library(request):
     """
     图书馆页面。
     以卡片形式(类似bookshelf)列出所有书籍, 方便地加入书架、开始阅读。
-    提供点选标签筛选书籍的功能。
+    提供标签筛选、书单、排序和分页功能。
     """
     tags = Tag.objects.all()
+    book_groups = BookGroup.objects.all()
     books = Book.objects.all()
 
     query = request.GET.get('q', '').strip()
     tags_param = request.GET.get('tags', '').strip()
+    exclude_tags_param = request.GET.get('exclude_tags', '').strip()
     selected_tags = [t for t in tags_param.split(',') if t]
+    excluded_tags = [t for t in exclude_tags_param.split(',') if t]
+    sort = request.GET.get('sort', 'updated')
+    order = request.GET.get('order', 'desc')
+    group_id = request.GET.get('group_id', '').strip()
+
+    selected_group = None
+    if group_id:
+        try:
+            selected_group = BookGroup.objects.get(id=int(group_id))
+            books = selected_group.books.all()
+        except (BookGroup.DoesNotExist, ValueError):
+            group_id = ''
 
     if query:
         books = books.filter(
-            Q(title__icontains=query) | 
+            Q(title__icontains=query) |
             Q(author__icontains=query) |
             Q(tags__name__icontains=query)
         ).distinct()
@@ -91,7 +105,17 @@ def library(request):
     for tag_name in selected_tags:
         books = books.filter(tags__name=tag_name)
 
-    books = books.distinct()
+    for tag_name in excluded_tags:
+        books = books.exclude(tags__name=tag_name)
+
+    sort_map = {'recos': 'recos', 'word_count': 'word_count', 'updated': 'created_at'}
+    sort_field = sort_map.get(sort, 'created_at')
+    order_prefix = '' if order == 'asc' else '-'
+    books = books.distinct().order_by(f'{order_prefix}{sort_field}')
+
+    paginator = Paginator(books, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     # 获取用户书架里的书籍ID，用于前端判断是否已在书架
     user_bookshelf_ids = []
@@ -99,10 +123,16 @@ def library(request):
         user_bookshelf_ids = Bookshelf.objects.filter(user=request.user).values_list('book_id', flat=True)
 
     context = {
-        'books': books,
+        'page_obj': page_obj,
         'tags': tags,
+        'book_groups': book_groups,
+        'selected_group': selected_group,
         'search_query': query,
         'current_tag': selected_tags,
+        'excluded_tags': excluded_tags,
+        'sort': sort,
+        'order': order,
+        'group_id': group_id,
         'user_bookshelf_ids': user_bookshelf_ids,
     }
     return render(request, 'library.html', context)

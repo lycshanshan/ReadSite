@@ -185,6 +185,38 @@ class TagAdmin(admin.ModelAdmin):
         return request.user.is_superuser
 
 
+@admin.register(BookGroup)
+class BookGroupAdmin(admin.ModelAdmin):
+    list_display = ('name', 'updated_at', 'uploader')
+    list_filter = ('updated_at', 'uploader')
+    search_fields = ('name', 'books__title')
+
+    def save_model(self, request, obj, form, change):
+        """新增书单时，如果没有指定创建者，自动绑定为当前用户"""
+        if not obj.pk and not obj.uploader:
+            obj.uploader = request.user
+        super().save_model(request, obj, form, change)
+    
+    def has_module_permission(self, request):
+        return request.user.is_active and request.user.is_staff
+    
+    def has_view_permission(self, request, obj=None):
+        return True
+    
+    def has_add_permission(self, request, obj=None):
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        if not obj or request.user.is_superuser:
+            return True
+        return obj.uploader == request.user
+
+    def has_delete_permission(self, request, obj=None):
+        if not obj or request.user.is_superuser:
+            return True
+        return obj.uploader == request.user
+
+
 @admin.register(GlobalSettings)
 class GlobalSettingsAdmin(admin.ModelAdmin):
     # 禁止添加新记录

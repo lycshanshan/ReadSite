@@ -1,5 +1,25 @@
 # Change Log
 
+## [0.4.0] 2026-04-08
+
+### What's New
+- Added `BookGroup` system, users can view BookGroups in `library` page.
+- Staffs can create BookGroups in `/admin` page and operate BookGroups through API call.
+
+### Improvements
+- Fixed a text error in `index` page.
+- Optimized the `library` page.
+  - Added paginator;
+  - Users can filter books by bookgroups and choose tags to exclude;
+  - The order of the books is now selective, three choices are provided now.
+
+### Future Features
+- [x] Custom order criteria, filters and book groups.
+- [ ] Optimize the search system to support fuzzy search and bookgroup search.
+- [ ] Add a book rating system.
+- [ ] Add automation scripts for project deployment and development debugging.
+- [ ] Modify README to the latest project version.
+
 ## [0.3.4] 2026-04-04
 
 ### What's New

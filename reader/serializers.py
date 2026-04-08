@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.utils import extend_schema_field, inline_serializer
 from django.contrib.auth.models import User
-from .models import Book, Chapter, Illustration, GlobalSettings, Tag
+from .models import Book, Chapter, Illustration, GlobalSettings, Tag, BookGroup
 
 
 class BookSerializer(serializers.ModelSerializer):
@@ -118,6 +118,77 @@ class IllustrationSerializer(serializers.ModelSerializer):
         """
         validated_data.pop('book', None)
         return super().update(instance, validated_data)
+
+
+class BookGroupSerializer(serializers.ModelSerializer):
+    """
+    书单模型序列化器。  
+    字段：`id`, `name`, `description`, `books`, `book_ids`, `updated_at`, `uploader`  
+    只读字段：`id`, `uploader`, `books`, `updated_at`  
+    只写字段：`book_ids`
+    - `book_ids` 字段接收传来的书籍ID列表并处理绑定; `books` 字段用于接口返回书单内书籍的简要信息。
+    """
+    # 用于在接口返回时展示书籍列表详情(只读)
+    books = serializers.SerializerMethodField(read_only=True)
+    
+    # 用于接收前端传来的书籍ID数据(只写)
+    book_ids = serializers.ListField(
+        child=serializers.CharField(), # 使用CharField以兼容 "1,2,3" 这种逗号分隔格式
+        write_only=True,
+        required=False,
+        help_text="传入书籍ID的列表，支持逗号分隔的字符串。不存在的ID将被自动忽略。"
+    )
+    class Meta:
+        model = BookGroup
+        fields = ['id', 'name', 'description', 'books', 'book_ids', 'updated_at', 'uploader']
+        # uploader 设为只读，由 API 视图在 perform_create 时自动绑定当前用户
+        read_only_fields = ['id', 'books', 'uploader', 'updated_at']
+    
+    @extend_schema_field(serializers.ListField(
+        child=inline_serializer(
+            name="BookGroupItem",
+            fields={"id": serializers.IntegerField(), "title": serializers.CharField()}
+        )
+    ))
+    def get_books(self, obj):
+        # 返回类似 [{"id": 1, "title": "书名1"}, {"id": 2, "title": "书名2"}] 的格式
+        return [{"id": book.id, "title": book.title} for book in obj.books.all()]
+    
+    def _handle_books(self, group, book_ids_data):
+        """内部方法：处理书籍ID的解析与绑定"""
+        if book_ids_data is not None:
+            processed_ids = []
+            # 处理 multipart/form-data 可能传来的逗号分隔字符串
+            for item in book_ids_data:
+                for b_id in str(item).split(','):
+                    b_id = b_id.strip()
+                    if b_id.isdigit(): # 确保是合法的整数ID
+                        processed_ids.append(int(b_id))
+            
+            # 去重
+            processed_ids = list(dict.fromkeys(processed_ids))
+            # 过滤出数据库中真实存在的书籍ID并绑定
+            valid_books = Book.objects.filter(id__in=processed_ids)
+            group.books.set(valid_books)
+    
+    def create(self, validated_data):
+        """
+        重写创建方法, 处理书单绑定的书籍。
+        """
+        book_ids = validated_data.pop('book_ids', None)
+        group = super().create(validated_data)
+        self._handle_books(group, book_ids)
+        return group
+    
+    def update(self, instance, validated_data):
+        """
+        重写更新方法, 处理书单绑定的书籍。
+        """
+        book_ids = validated_data.pop('book_ids', None)
+        group = super().update(instance, validated_data)
+        if book_ids is not None:
+            self._handle_books(group, book_ids)
+        return group
 
 
 class GlobalSettingsSerializer(serializers.ModelSerializer):
