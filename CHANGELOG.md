@@ -12,8 +12,8 @@
 
 ### Improvements
 - Optimized the style of the confirm-download modal.
-- Changed Django language to `zh-hans`.
-- Changed Django time zone to `UTC+8`.
+- Changed Django default language to `zh-hans`.
+- Changed Django default time zone to `UTC+8`.
 
 ### Future Features
 - [x] Optimize Reco system.

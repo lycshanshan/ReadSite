@@ -29,13 +29,15 @@
 
 ---
 
-## 📁 核心数据模型与逻辑
+## 📁 核心数据库模型
 
 - **Book / Chapter / Illustration**: 书籍元数据、章节内容与插图，利用 Django Signals 自动统计总字数与插图总数。
 - **Tag**: 标签，存储当前存在的所有标签，与书籍绑定。
 - **UserProgress / Bookshelf / Bookmark**: 记录用户当前阅读到了哪一章，以及用户的个人书架和收藏夹。
-- **UserPoints**: 扩展内置 User，管理用户的积分 (Point)、经验值 (Exp) 和等级。
+- **UserPoints**: 扩展内置 User，管理用户的推荐 (Reco)、积分 (Point)、经验值 (Exp) 和等级。
+- **BookRecoLog**: 推荐记录，记录每名用户当天对某本书的推荐次数。
 - **GlobalSettings**: 全局设置，保证数据库中只有一条记录，控制整站级别的开关。
+- **StaffApplication**: 员工申请，普通用户可以申请成为网站维护者 (Staff)。
 
 ---
 
