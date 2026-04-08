@@ -1,5 +1,22 @@
 # Change Log
 
+## [0.4.1] 2026-04-09
+
+### What's New
+- Optimized search system.
+  - Users can search books by bookgroup.
+  - Users can input multiple key words splited by space. (e.g., `KEY1 KEY2`)
+  - Users can enter regular expressions in the search box. (e.g., `KEY1|KEY2`, `^天龙.*部$`)
+
+### Improvements
+- Optimized `settings.py` for the database settings. Users can now choose database (MySQL or SQLite3) in the `.env` file.
+
+### Future Features
+- [x] Optimize the search system to support fuzzy search and bookgroup search.
+- [ ] Add a book rating system.
+- [ ] Add automation scripts for project deployment and development debugging.
+- [ ] Modify README to the latest project version.
+
 ## [0.4.0] 2026-04-08
 
 ### What's New

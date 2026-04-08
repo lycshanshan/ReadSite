@@ -14,7 +14,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
 from .models import *
-from .services import BookDownloadService
+from .services import BookDownloadService, SearchService
 
 
 def get_recommend_books(booklist):
@@ -43,11 +43,11 @@ def index(request):
     """
     query = request.GET.get('q', '')
     if query:
-        book_list = Book.objects.filter(
-            Q(title__icontains=query) | 
-            Q(author__icontains=query) |
-            Q(tags__name__icontains=query)
-        ).order_by('-created_at')
+        search_q = SearchService.build_search_query(
+            query, 
+            ['title', 'author', 'tags__name', 'bookgroup__name']
+        )
+        book_list = Book.objects.filter(search_q).distinct().order_by('-created_at')
         is_search = True
         recommended_books = []
     else:
@@ -96,11 +96,11 @@ def library(request):
             group_id = ''
 
     if query:
-        books = books.filter(
-            Q(title__icontains=query) |
-            Q(author__icontains=query) |
-            Q(tags__name__icontains=query)
-        ).distinct()
+        search_q = SearchService.build_search_query(
+            query, 
+            ['title', 'author', 'tags__name', 'bookgroup__name']
+        )
+        books = books.filter(search_q).distinct()
 
     for tag_name in selected_tags:
         books = books.filter(tags__name=tag_name)
@@ -421,17 +421,21 @@ def my_bookshelf(request):
     mark_items = Bookmark.objects.filter(user=request.user).select_related('chapter').order_by('-added_at')
 
     if query:
-        shelf_items = shelf_items.filter(
-            Q(book__title__icontains=query) | 
-            Q(book__author__icontains=query) |
-            Q(book__tags__name__icontains=query)
+        shelf_q = SearchService.build_search_query(
+            query, 
+            ['book__title', 'book__author', 'book__tags__name']
         )
-        mark_items = mark_items.filter(
-            Q(chapter__book__title__icontains=query) |
-            Q(chapter__book__author__icontains=query) |
-            Q(chapter__title__icontains=query) |
-            Q(chapter__book__tags__name__icontains=query)
+        shelf_items = shelf_items.filter(shelf_q).distinct()
+        
+        mark_q = SearchService.build_search_query(
+            query, [
+                'chapter__title',
+                'chapter__book__title',
+                'chapter__book__author',
+                'chapter__book__tags__name'
+            ]
         )
+        mark_items = mark_items.filter(mark_q).distinct()
 
     # 查询阅读进度
     books_with_progress = []
