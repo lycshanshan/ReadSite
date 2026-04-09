@@ -1,0 +1,4 @@
+# Shell scripts must use LF line endings regardless of the OS editing them
+scripts/setup.sh  text eol=lf
+scripts/dev.sh    text eol=lf
+scripts/update.sh text eol=lf

@@ -1,5 +1,29 @@
 # Change Log
 
+## [1.0.0] 2026-04-09
+
+### What's New
+- Added `BookRate` system, users can rate book in `book_detail` page. (Score: 1-10)
+- The average score of a book will be shown in its detail page.
+- Add automation scripts for the project.
+  - `setup.bat` and `setup.sh` are for project deployment.
+  - When running `setup`, `setup.py` will be called to create environment, install packages and create database.
+  - `dev.bat` and `dev.sh` are for development updating.
+  - When running `dev`, the commands `makemigrations`, `migrate`, `runserver` will be automatically run.
+  - `update.sh` is for updating on server. It will automatically stop Gunicorn service, run update commands and restart the service.
+
+### Bug Fixes
+- Added `static_collection/` to `.gitignore`.
+
+### Improvements
+- Now the space-splited keywords will be recognized as OR.
+- Modified README to the latest project version.
+
+### Future Features
+- [x] Add a book rating system.
+- [x] Add automation scripts for project deployment and development debugging.
+- [x] Modify README to the latest project version.
+
 ## [0.4.1] 2026-04-09
 
 ### What's New

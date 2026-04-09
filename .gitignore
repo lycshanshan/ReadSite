@@ -12,6 +12,9 @@ venv/
 env/
 .env
 
+# --- 静态文件收集 ---
+static_collection/
+
 # --- 媒体文件 (保留文件夹结构，但忽略内容) ---
 media/*
 !media/covers/
