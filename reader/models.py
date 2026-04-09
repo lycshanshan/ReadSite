@@ -46,8 +46,12 @@ class Book(models.Model):
     # 统计字段 (由 Chapter 和 Illustration 的 save() 钩子自动维护)
     word_count = models.PositiveIntegerField(default=0, verbose_name="总字数")
     illustration_count = models.PositiveIntegerField(default=0, verbose_name="插图数量")
-
     recos = models.PositiveIntegerField(default=0, verbose_name="Reco数")
+
+    # 评分缓存字段 (由 BookRating 的信号自动维护)
+    rating_avg = models.DecimalField(max_digits=3, decimal_places=2, default=0.0, verbose_name="平均评分")
+    rating_count = models.PositiveIntegerField(default=0, verbose_name="评分人数")
+
     created_at = models.DateTimeField(auto_now=True, verbose_name="更新时间") # 历史问题, 更名需要的修改过多
     uploader = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="上传者")
 
@@ -332,6 +336,34 @@ class BookRecoLog(models.Model):
 
     def __str__(self):
         return f"{self.user.username} → {self.book.title} ({self.date}): {self.count}"
+
+
+class BookRating(models.Model):
+    """
+    书籍评分模型 (BookRating)
+    记录用户对每本书的评分 (1-10分)。每位用户对每本书只能有一条记录，可修改。
+
+    字段说明：
+    - `user` (ForeignKey to User): 评分的用户, 级联删除。
+    - `book` (ForeignKey to Book): 被评分的书籍, 级联删除。
+    - `score` (PositiveSmallIntegerField): 评分, 范围 1-10, 范围校验在 view 层。
+    - `created_at` (DateTimeField): 首次评分时间, 自动生成。
+    - `updated_at` (DateTimeField): 最近修改时间, 自动更新。
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="用户")
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="书籍")
+    score = models.PositiveSmallIntegerField(verbose_name="评分")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="评分时间")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="更新时间")
+
+    class Meta:
+        unique_together = ('user', 'book')
+        verbose_name = "书籍评分"
+        verbose_name_plural = verbose_name
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.book.title} - {self.score}"
 
 
 class StaffApplication(models.Model):

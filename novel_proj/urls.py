@@ -45,6 +45,7 @@ urlpatterns = [
     path('book/<int:book_id>/', views.book_detail, name='book_detail'),
     path('book/<int:book_id>/download/', views.book_download, name='book_download'),
     path('book/<int:book_id>/reco/', views.book_reco, name='book_reco'),
+    path('book/<int:book_id>/rate/', views.rate_book, name='rate_book'),
     path('read/<int:chapter_id>/', views.read_chapter, name='read_chapter'),
     path('illustration/<int:book_id>/<str:volume_name>/', views.view_illustration, name='view_illustration'),
 

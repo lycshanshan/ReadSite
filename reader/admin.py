@@ -10,6 +10,7 @@ admin.site.register(UserProgress)
 admin.site.register(Bookshelf)
 admin.site.register(UserPoints)
 admin.site.register(Bookmark)
+admin.site.register(BookRating)
 
 
 @admin.register(Book)
@@ -27,7 +28,7 @@ class BookAdmin(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         """普通 Staff 不能修改 uploader 字段，字数等统计字段强制只读"""
-        readonly = ['word_count', 'illustration_count']
+        readonly = ['word_count', 'illustration_count', 'rating_avg']
         if not request.user.is_superuser:
             readonly.extend(['uploader', 'recos'])
         return readonly

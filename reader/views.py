@@ -184,6 +184,11 @@ def book_detail(request, book_id):
     if request.user.is_authenticated:
         in_bookshelf = Bookshelf.objects.filter(user=request.user, book=book).exists()
 
+    # 获取用户对本书的评分
+    user_rating = None
+    if request.user.is_authenticated:
+        user_rating = BookRating.objects.filter(user=request.user, book=book).first()
+
     context = {
         'book': book,
         'grouped_chapters': grouped_chapters,
@@ -191,6 +196,7 @@ def book_detail(request, book_id):
         'progress': progress,
         'in_bookshelf': in_bookshelf,
         'search_query': query,
+        'user_rating': user_rating,
     }
     return render(request, 'book_detail.html', context)
 
@@ -290,6 +296,37 @@ def book_reco(request, book_id):
         'msg': f'成功投出 {count} 个推荐！\n本书共获得 {book.recos} 个推荐。\n您当前剩余 {user_points.reco_balance} 次推荐机会。',
         'user_recos': user_points.reco_balance,
         'daily_remaining': 4 - log.count,
+    })
+
+
+@login_required
+@require_POST
+def rate_book(request, book_id):
+    """
+    处理用户评分请求（新增或修改）。
+    使用 update_or_create 实现 upsert，每位用户对每本书只能有一条评分记录。
+    返回更新后的平均分、评分人数和用户当前分数。
+    """
+    book = get_object_or_404(Book, pk=book_id)
+    try:
+        data = json.loads(request.body)
+        score = int(data.get('score'))
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return JsonResponse({'status': 'fail', 'msg': '无效的评分数据。'})
+    if not (1 <= score <= 10):
+        return JsonResponse({'status': 'fail', 'msg': '评分必须在 1 到 10 之间。'})
+
+    BookRating.objects.update_or_create(
+        user=request.user,
+        book=book,
+        defaults={'score': score}
+    )
+    book.refresh_from_db(fields=['rating_avg', 'rating_count'])
+    return JsonResponse({
+        'status': 'ok',
+        'user_score': score,
+        'rating_avg': float(book.rating_avg),
+        'rating_count': book.rating_count,
     })
 
 

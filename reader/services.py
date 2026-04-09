@@ -151,7 +151,7 @@ class SearchService:
                 word_q = Q()
                 for field in search_fields:
                     word_q |= Q(**{f"{field}__icontains": word})
-                final_q &= word_q  # 多个词之间是 AND 关系 (必须同时满足)
+                final_q |= word_q  # 多个词之间是 OR 关系
             return final_q
         
         # 正则搜索

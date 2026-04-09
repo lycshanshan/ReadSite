@@ -68,6 +68,37 @@
                 {% endfor %}
             </div>
             {% endif %}
+
+            <!-- 评分区域 -->
+            <div class="book-rating-area">
+                <div class="rating-display">
+                    <div class="stars-track" title="{{ book.rating_avg }}">
+                        <span class="stars-fill" style="width: {% widthratio book.rating_avg 10 100 %}%;"></span>
+                    </div>
+                    <span class="rating-text">
+                        {% if book.rating_count > 0 %}
+                            {{ book.rating_avg|floatformat:2 }} <span class="rating-sub">（{{ book.rating_count }}人评分）</span>
+                        {% else %}
+                            <span class="rating-sub">暂无评分</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% if user.is_authenticated %}
+                <div class="rating-selector" id="rating-selector">
+                    <span class="rating-label">我的评分：</span>
+                    <div class="stars-input" id="stars-input">
+                        {% for i in "1234567890" %}
+                        <span class="star-input-item {% if user_rating and forloop.counter <= user_rating.score %}star-selected{% endif %}"
+                              data-score="{{ forloop.counter }}">&#9733;</span>
+                        {% endfor %}
+                    </div>
+                    <span class="rating-user-hint" id="rating-hint">
+                        {% if user_rating %}已评 {{ user_rating.score }} 分{% else %}点击星星评分{% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+
             <div class="book-description">
                 <h3>简介:</h3>
                 {{ book.description|linebreaks }}
@@ -441,6 +472,65 @@
             recoModal.style.display = 'none';
         }
     });
+
+    // ---- 评分系统 ----
+    {% if user.is_authenticated %}
+    const starsInput = document.getElementById('stars-input');
+    const ratingHint = document.getElementById('rating-hint');
+    let currentUserScore = {% if user_rating %}{{ user_rating.score }}{% else %}0{% endif %};
+
+    function setStarHighlight(score) {
+        document.querySelectorAll('.star-input-item').forEach(star => {
+            star.classList.toggle('star-hover', parseInt(star.dataset.score) <= score);
+        });
+    }
+
+    function setStarSelected(score) {
+        document.querySelectorAll('.star-input-item').forEach(star => {
+            star.classList.toggle('star-selected', parseInt(star.dataset.score) <= score);
+            star.classList.remove('star-hover');
+        });
+    }
+
+    if (starsInput) {
+        starsInput.addEventListener('mouseover', function(e) {
+            const star = e.target.closest('.star-input-item');
+            if (star) setStarHighlight(parseInt(star.dataset.score));
+        });
+        starsInput.addEventListener('mouseout', function() {
+            setStarHighlight(0);
+            if (currentUserScore > 0) setStarSelected(currentUserScore);
+        });
+        starsInput.addEventListener('click', function(e) {
+            const star = e.target.closest('.star-input-item');
+            if (!star) return;
+            const score = parseInt(star.dataset.score);
+            fetch("{% url 'rate_book' book.id %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ score: score })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    currentUserScore = data.user_score;
+                    setStarSelected(currentUserScore);
+                    if (ratingHint) ratingHint.innerText = `已评 ${data.user_score} 分`;
+                    const ratingText = document.querySelector('.rating-text');
+                    if (ratingText) {
+                        ratingText.innerHTML = `${data.rating_avg.toFixed(2)} <span class="rating-sub">（${data.rating_count}人评分）</span>`;
+                    }
+                    const fillBar = document.querySelector('.stars-fill');
+                    if (fillBar) fillBar.style.width = `${data.rating_avg * 10}%`;
+                }
+            })
+            .catch(err => console.error('Rating error:', err));
+        });
+    }
+    {% endif %}
 </script>
 </body>
 </html>
