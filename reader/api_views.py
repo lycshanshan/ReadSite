@@ -8,15 +8,15 @@ from rest_framework.decorators import action, renderer_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from drf_spectacular.utils import extend_schema, OpenApiTypes, inline_serializer
 
-from .models import Book, Chapter, Illustration, GlobalSettings
+from .models import Book, Chapter, Illustration, GlobalSettings, BookGroup
 from .serializers import (
     BookSerializer, ChapterSerializer, IllustrationSerializer,
-    GlobalSettingsSerializer, UserAdminSerializer
+    GlobalSettingsSerializer, UserAdminSerializer, BookGroupSerializer
 )
 from .permissions import IsSuperUser, IsUploaderOrSuperUser
 from .services import BookDownloadService
 
-    
+
 class PassthroughRenderer(renderers.BaseRenderer):
     """
     透传渲染器：不做任何数据处理，直接返回。
@@ -231,6 +231,62 @@ class IllustrationManageViewSet(viewsets.ModelViewSet):
             serializer.save(index=new_index)
         else:
             serializer.save()
+
+
+@extend_schema(tags=['书单管理 (Admin)'])
+class BookGroupManageViewSet(viewsets.ModelViewSet):
+    """
+    书单管理接口，提供书单的增删改查。
+    普通管理员只能操作自己创建的书单，超级管理员可操作所有书单。
+    """
+    queryset = BookGroup.objects.all()
+    serializer_class = BookGroupSerializer
+    
+    permission_classes = [IsAuthenticated, IsAdminUser, IsUploaderOrSuperUser]
+
+    parser_classes = (MultiPartParser, FormParser, JSONParser)
+    http_method_names = ['get', 'post', 'put', 'delete', 'head', 'options']
+
+    @extend_schema(
+        summary="创建书单",
+        description="创建一个新的书单。创建者将自动被记录为该书单的 uploader。",
+        request=BookGroupSerializer,
+        responses={201: BookGroupSerializer}
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+    
+    @extend_schema(
+        summary="获取书单列表",
+        description="获取所有书单的列表。列表按最近更新时间排序。"
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
+    @extend_schema(
+        summary="查看书单详情",
+        description="获取指定 ID 书单的详细信息，包含书单内的书籍简要信息。"
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+    
+    @extend_schema(
+        summary="修改书单信息",
+        description="修改书单名称、简介或包含的书籍（传入 book_ids 会全量覆盖原有的书籍列表）。仅限创建者或超管。"
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+    
+    @extend_schema(
+        summary="删除书单",
+        description="删除指定书单，不会删除书单内的具体书籍。仅限创建者或超管。"
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+    
+    def perform_create(self, serializer):
+        # 保存时，自动将当前登录的 Admin 用户设为书单的创建者(uploader)
+        serializer.save(uploader=self.request.user)
 
 
 @extend_schema(tags=['系统设置 (Superuser)'])

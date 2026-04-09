@@ -14,7 +14,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
 from .models import *
-from .services import BookDownloadService
+from .services import BookDownloadService, SearchService
 
 
 def get_recommend_books(booklist):
@@ -43,11 +43,11 @@ def index(request):
     """
     query = request.GET.get('q', '')
     if query:
-        book_list = Book.objects.filter(
-            Q(title__icontains=query) | 
-            Q(author__icontains=query) |
-            Q(tags__name__icontains=query)
-        ).order_by('-created_at')
+        search_q = SearchService.build_search_query(
+            query, 
+            ['title', 'author', 'tags__name', 'bookgroup__name']
+        )
+        book_list = Book.objects.filter(search_q).distinct().order_by('-created_at')
         is_search = True
         recommended_books = []
     else:
@@ -72,26 +72,50 @@ def library(request):
     """
     图书馆页面。
     以卡片形式(类似bookshelf)列出所有书籍, 方便地加入书架、开始阅读。
-    提供点选标签筛选书籍的功能。
+    提供标签筛选、书单、排序和分页功能。
     """
     tags = Tag.objects.all()
+    book_groups = BookGroup.objects.all()
     books = Book.objects.all()
 
     query = request.GET.get('q', '').strip()
     tags_param = request.GET.get('tags', '').strip()
+    exclude_tags_param = request.GET.get('exclude_tags', '').strip()
     selected_tags = [t for t in tags_param.split(',') if t]
+    excluded_tags = [t for t in exclude_tags_param.split(',') if t]
+    sort = request.GET.get('sort', 'updated')
+    order = request.GET.get('order', 'desc')
+    group_id = request.GET.get('group_id', '').strip()
+
+    selected_group = None
+    if group_id:
+        try:
+            selected_group = BookGroup.objects.get(id=int(group_id))
+            books = selected_group.books.all()
+        except (BookGroup.DoesNotExist, ValueError):
+            group_id = ''
 
     if query:
-        books = books.filter(
-            Q(title__icontains=query) | 
-            Q(author__icontains=query) |
-            Q(tags__name__icontains=query)
-        ).distinct()
+        search_q = SearchService.build_search_query(
+            query, 
+            ['title', 'author', 'tags__name', 'bookgroup__name']
+        )
+        books = books.filter(search_q).distinct()
 
     for tag_name in selected_tags:
         books = books.filter(tags__name=tag_name)
 
-    books = books.distinct()
+    for tag_name in excluded_tags:
+        books = books.exclude(tags__name=tag_name)
+
+    sort_map = {'recos': 'recos', 'word_count': 'word_count', 'updated': 'created_at'}
+    sort_field = sort_map.get(sort, 'created_at')
+    order_prefix = '' if order == 'asc' else '-'
+    books = books.distinct().order_by(f'{order_prefix}{sort_field}')
+
+    paginator = Paginator(books, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     # 获取用户书架里的书籍ID，用于前端判断是否已在书架
     user_bookshelf_ids = []
@@ -99,10 +123,16 @@ def library(request):
         user_bookshelf_ids = Bookshelf.objects.filter(user=request.user).values_list('book_id', flat=True)
 
     context = {
-        'books': books,
+        'page_obj': page_obj,
         'tags': tags,
+        'book_groups': book_groups,
+        'selected_group': selected_group,
         'search_query': query,
         'current_tag': selected_tags,
+        'excluded_tags': excluded_tags,
+        'sort': sort,
+        'order': order,
+        'group_id': group_id,
         'user_bookshelf_ids': user_bookshelf_ids,
     }
     return render(request, 'library.html', context)
@@ -154,6 +184,11 @@ def book_detail(request, book_id):
     if request.user.is_authenticated:
         in_bookshelf = Bookshelf.objects.filter(user=request.user, book=book).exists()
 
+    # 获取用户对本书的评分
+    user_rating = None
+    if request.user.is_authenticated:
+        user_rating = BookRating.objects.filter(user=request.user, book=book).first()
+
     context = {
         'book': book,
         'grouped_chapters': grouped_chapters,
@@ -161,6 +196,7 @@ def book_detail(request, book_id):
         'progress': progress,
         'in_bookshelf': in_bookshelf,
         'search_query': query,
+        'user_rating': user_rating,
     }
     return render(request, 'book_detail.html', context)
 
@@ -260,6 +296,37 @@ def book_reco(request, book_id):
         'msg': f'成功投出 {count} 个推荐！\n本书共获得 {book.recos} 个推荐。\n您当前剩余 {user_points.reco_balance} 次推荐机会。',
         'user_recos': user_points.reco_balance,
         'daily_remaining': 4 - log.count,
+    })
+
+
+@login_required
+@require_POST
+def rate_book(request, book_id):
+    """
+    处理用户评分请求（新增或修改）。
+    使用 update_or_create 实现 upsert，每位用户对每本书只能有一条评分记录。
+    返回更新后的平均分、评分人数和用户当前分数。
+    """
+    book = get_object_or_404(Book, pk=book_id)
+    try:
+        data = json.loads(request.body)
+        score = int(data.get('score'))
+    except (json.JSONDecodeError, ValueError, TypeError):
+        return JsonResponse({'status': 'fail', 'msg': '无效的评分数据。'})
+    if not (1 <= score <= 10):
+        return JsonResponse({'status': 'fail', 'msg': '评分必须在 1 到 10 之间。'})
+
+    BookRating.objects.update_or_create(
+        user=request.user,
+        book=book,
+        defaults={'score': score}
+    )
+    book.refresh_from_db(fields=['rating_avg', 'rating_count'])
+    return JsonResponse({
+        'status': 'ok',
+        'user_score': score,
+        'rating_avg': float(book.rating_avg),
+        'rating_count': book.rating_count,
     })
 
 
@@ -391,17 +458,21 @@ def my_bookshelf(request):
     mark_items = Bookmark.objects.filter(user=request.user).select_related('chapter').order_by('-added_at')
 
     if query:
-        shelf_items = shelf_items.filter(
-            Q(book__title__icontains=query) | 
-            Q(book__author__icontains=query) |
-            Q(book__tags__name__icontains=query)
+        shelf_q = SearchService.build_search_query(
+            query, 
+            ['book__title', 'book__author', 'book__tags__name']
         )
-        mark_items = mark_items.filter(
-            Q(chapter__book__title__icontains=query) |
-            Q(chapter__book__author__icontains=query) |
-            Q(chapter__title__icontains=query) |
-            Q(chapter__book__tags__name__icontains=query)
+        shelf_items = shelf_items.filter(shelf_q).distinct()
+        
+        mark_q = SearchService.build_search_query(
+            query, [
+                'chapter__title',
+                'chapter__book__title',
+                'chapter__book__author',
+                'chapter__book__tags__name'
+            ]
         )
+        mark_items = mark_items.filter(mark_q).distinct()
 
     # 查询阅读进度
     books_with_progress = []

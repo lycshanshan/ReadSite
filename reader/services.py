@@ -2,8 +2,10 @@ import os
 import zipfile
 import tempfile
 import time
+import re
 from django.http import FileResponse, StreamingHttpResponse
 from django.utils.encoding import escape_uri_path
+from django.db.models import Q
 from .models import Illustration
 
 class BookDownloadService:
@@ -98,3 +100,73 @@ class BookDownloadService:
         response = FileResponse(temp_file, as_attachment=True, filename=filename)
         response['Content-Disposition'] = f"attachment; filename*=UTF-8''{escape_uri_path(filename)}"
         return response
+
+
+class SearchService:
+    @staticmethod
+    def _is_regex(query_string):
+        """
+        判断用户输入是否具有明显的正则表达式意图，并且是一个合法的正则。
+        """
+        # 正则特殊字符集
+        regex_indicators = [
+            '^', '$', '.', '.*', '.+', '*', '+', '?', '|',
+            '(', ')', '[', ']', '{', '}', '(?',
+            r'\d', r'\w', r'\s',
+            r'\D', r'\W', r'\S', r'\b', r'\B'
+        ]
+        
+        # 如果包含这些特征字符之一，尝试编译
+        if any(indicator in query_string for indicator in regex_indicators):
+            try:
+                re.compile(query_string)
+                return True
+            except re.error:
+                return False
+        return False
+    
+    @staticmethod
+    def build_search_query(query_string, search_fields):
+        """
+        构建智能模糊搜索的 Q 对象
+        :param query_string: 用户输入的搜索词
+        :param search_fields: 需要搜索的模型字段列表，例如 ['title', 'author', 'tags__name']
+        :return: Django Q 对象
+        """
+        query_string = query_string.strip()
+        if not query_string:
+            return Q()
+        if SearchService._is_regex(query_string):
+            final_q = Q()
+            for field in search_fields:
+                final_q |= Q(**{f"{field}__iregex": query_string})
+            return final_q
+        
+        # 将多个连续空白字符压缩为一个空格并拆词搜索
+        query_string = re.sub(r'\s+', ' ', query_string)
+        if ' ' in query_string:
+            words = query_string.split(' ')[:5]  # 最多允许拆分5个词，防止超长查询
+            final_q = Q()
+            for word in words:
+                word_q = Q()
+                for field in search_fields:
+                    word_q |= Q(**{f"{field}__icontains": word})
+                final_q |= word_q  # 多个词之间是 OR 关系
+            return final_q
+        
+        # 正则搜索
+        length = len(query_string)
+        # 边界条件：字符太少(1个字)没必要正则，字符太多(>10)正则极慢且容易无意义
+        if 1 < length <= 10:
+            # 边界条件处理：使用 re.escape 转义用户输入，防止用户输入 .*+? 等正则元字符导致数据库正则解析报错
+            regex_pattern = '.*'.join(re.escape(char) for char in query_string)
+            final_q = Q()
+            for field in search_fields:
+                final_q |= Q(**{f"{field}__iregex": regex_pattern})
+            return final_q
+        # 退化策略 (单个字符或超长字符串)
+        else:
+            final_q = Q()
+            for field in search_fields:
+                final_q |= Q(**{f"{field}__icontains": query_string})
+            return final_q

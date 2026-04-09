@@ -1,7 +1,8 @@
 from django.db.models.signals import post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
-from .models import Book, Chapter, Illustration
+from django.db.models import Avg
+from .models import Book, Chapter, Illustration, BookRating
 
 @receiver(m2m_changed, sender=Book.tags.through)
 def limit_book_tags(sender, instance, action, pk_set, **kwargs):
@@ -62,3 +63,24 @@ def update_illustration_count_on_delete(sender, instance, **kwargs):
     if book.id:
         book.illustration_count = max(0, book.illustration_count - 1)
         book.save(update_fields=['illustration_count'])
+
+
+def _refresh_book_rating(book):
+    """重新计算书籍平均评分和评分人数, 写入缓存字段。"""
+    result = BookRating.objects.filter(book=book).aggregate(avg=Avg('score'))
+    avg = result['avg']
+    book.rating_avg = round(avg, 2) if avg is not None else 0.00
+    book.rating_count = BookRating.objects.filter(book=book).count()
+    book.save(update_fields=['rating_avg', 'rating_count'])
+
+@receiver(post_save, sender=BookRating)
+def update_book_rating_on_save(sender, instance, **kwargs):
+    """监听评分的保存 (新增和修改), 重新计算平均分。"""
+    _refresh_book_rating(instance.book)
+
+@receiver(post_delete, sender=BookRating)
+def update_book_rating_on_delete(sender, instance, **kwargs):
+    """监听评分的删除, 重新计算平均分。"""
+    book = instance.book
+    if book.id:
+        _refresh_book_rating(book)

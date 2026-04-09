@@ -13,7 +13,7 @@
         <div class="nav-left">
             <a href="{% url 'library' %}" class="nav-link btn-outline">图书馆</a>
             <form action="/" method="get" class="search-box">
-                <input type="text" name="q" class="search-input" placeholder="搜索书名/作者/标签..." value="{{ search_query }}">
+                <input type="text" name="q" class="search-input" placeholder="搜索书名/作者/标签/书单..." value="{{ search_query }}">
                 <button type="submit" class="search-btn">🔍</button>
             </form>
         </div>
@@ -113,7 +113,7 @@
                     <div>作者</div>
                     <div class="list-cell-hide-mobile">总字数</div>
                     <div class="list-cell-hide-mobile">推荐数</div>
-                    <div>收录时间</div>
+                    <div>更新时间</div>
                 </div>
                 {% for book in page_obj %}
                 <a href="{% url 'book_detail' book.id %}" class="list-row" target="_blank">

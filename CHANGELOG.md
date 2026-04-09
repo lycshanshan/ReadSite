@@ -1,5 +1,66 @@
 # Change Log
 
+## [1.0.0] 2026-04-09
+
+### What's New
+- Added `BookRate` system, users can rate book in `book_detail` page. (Score: 1-10)
+- The average score of a book will be shown in its detail page.
+- Add automation scripts for the project.
+  - `setup.bat` and `setup.sh` are for project deployment.
+  - When running `setup`, `setup.py` will be called to create environment, install packages and create database.
+  - `dev.bat` and `dev.sh` are for development updating.
+  - When running `dev`, the commands `makemigrations`, `migrate`, `runserver` will be automatically run.
+  - `update.sh` is for updating on server. It will automatically stop Gunicorn service, run update commands and restart the service.
+
+### Bug Fixes
+- Added `static_collection/` to `.gitignore`.
+
+### Improvements
+- Now the space-splited keywords will be recognized as OR.
+- Modified README to the latest project version.
+
+### Future Features
+- [x] Add a book rating system.
+- [x] Add automation scripts for project deployment and development debugging.
+- [x] Modify README to the latest project version.
+
+## [0.4.1] 2026-04-09
+
+### What's New
+- Optimized search system.
+  - Users can search books by bookgroup.
+  - Users can input multiple key words splited by space. (e.g., `KEY1 KEY2`)
+  - Users can enter regular expressions in the search box. (e.g., `KEY1|KEY2`, `^天龙.*部$`)
+
+### Improvements
+- Optimized `settings.py` for the database settings. Users can now choose database (MySQL or SQLite3) in the `.env` file.
+
+### Future Features
+- [x] Optimize the search system to support fuzzy search and bookgroup search.
+- [ ] Add a book rating system.
+- [ ] Add automation scripts for project deployment and development debugging.
+- [ ] Modify README to the latest project version.
+
+## [0.4.0] 2026-04-08
+
+### What's New
+- Added `BookGroup` system, users can view BookGroups in `library` page.
+- Staffs can create BookGroups in `/admin` page and operate BookGroups through API call.
+
+### Improvements
+- Fixed a text error in `index` page.
+- Optimized the `library` page.
+  - Added paginator;
+  - Users can filter books by bookgroups and choose tags to exclude;
+  - The order of the books is now selective, three choices are provided now.
+
+### Future Features
+- [x] Custom order criteria, filters and book groups.
+- [ ] Optimize the search system to support fuzzy search and bookgroup search.
+- [ ] Add a book rating system.
+- [ ] Add automation scripts for project deployment and development debugging.
+- [ ] Modify README to the latest project version.
+
 ## [0.3.4] 2026-04-04
 
 ### What's New
