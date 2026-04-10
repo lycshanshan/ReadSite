@@ -108,7 +108,7 @@ def library(request):
     for tag_name in excluded_tags:
         books = books.exclude(tags__name=tag_name)
 
-    sort_map = {'recos': 'recos', 'word_count': 'word_count', 'updated': 'created_at'}
+    sort_map = {'recos': 'recos', 'word_count': 'word_count', 'updated': 'created_at', 'score': 'rating_avg'}
     sort_field = sort_map.get(sort, 'created_at')
     order_prefix = '' if order == 'asc' else '-'
     books = books.distinct().order_by(f'{order_prefix}{sort_field}')

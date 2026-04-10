@@ -66,8 +66,9 @@
 .sort-btn:hover { border-color: #2c3e50; color: #2c3e50; }
 .sort-btn.active { background: #2c3e50; color: white; border-color: #2c3e50; }
 .sort-order-btn {
-    padding: 4px 10px; border-radius: 12px; border: 1px solid #ddd;
-    background: white; color: #888; font-size: 0.85em; cursor: pointer;
+    margin-left: auto;
+    padding: 2px 6px; border-radius: 4px; border: 1px solid #ddd;
+    background: white; color: #888; font-size: 0.6em; font-weight: bold; cursor: pointer;
     transition: 0.2s; user-select: none; margin-top: 2px;
 }
 .sort-order-btn:hover { border-color: #7f8c8d; color: #2c3e50; }

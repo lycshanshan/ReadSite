@@ -55,7 +55,14 @@
                 <button class="sort-btn {% if sort == 'updated' %}active{% endif %}" data-sort="updated" onclick="selectSort(this)">更新时间</button>
                 <button class="sort-btn {% if sort == 'recos' %}active{% endif %}" data-sort="recos" onclick="selectSort(this)">推荐数</button>
                 <button class="sort-btn {% if sort == 'word_count' %}active{% endif %}" data-sort="word_count" onclick="selectSort(this)">字数</button>
-                <button class="sort-order-btn" id="order-btn" onclick="toggleOrder()" title="切换升降序">{% if order == 'asc' %}↑ 升序{% else %}↓ 降序{% endif %}</button>
+                <button class="sort-btn {% if sort == 'score' %}active{% endif %}" data-sort="score" onclick="selectSort(this)">评分</button>
+                <button class="sort-order-btn" id="order-btn" onclick="toggleOrder()" title="切换升降序">
+                    {% if order == 'asc' %}
+                    <i class="icon">↑</i> 升序
+                    {% else %}
+                    <i class="icon">↓</i> 降序
+                    {% endif %}
+                </button>
             </div>
 
             <!-- 标签（左键包含，右键排除） -->
