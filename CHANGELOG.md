@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.0.1] 2026-04-10
+
+### Bug Fixes
+- Fixed the digits bug in `rating_avg` field of `Book` model.
+
+### Improvements
+- Added score-based sort in `library` page.
+- Modified the style of `升序/降序` button.
+
 ## [1.0.0] 2026-04-09
 
 ### What's New

@@ -49,7 +49,7 @@ class Book(models.Model):
     recos = models.PositiveIntegerField(default=0, verbose_name="Reco数")
 
     # 评分缓存字段 (由 BookRating 的信号自动维护)
-    rating_avg = models.DecimalField(max_digits=3, decimal_places=2, default=0.0, verbose_name="平均评分")
+    rating_avg = models.DecimalField(max_digits=4, decimal_places=2, default=0.0, verbose_name="平均评分")
     rating_count = models.PositiveIntegerField(default=0, verbose_name="评分人数")
 
     created_at = models.DateTimeField(auto_now=True, verbose_name="更新时间") # 历史问题, 更名需要的修改过多
