@@ -1,4 +1,3 @@
-# --- Django 核心忽略 ---
 *.log
 *.pot
 *.pyc
@@ -23,3 +22,7 @@ media/covers/*
 !media/covers/.gitkeep
 media/illustrations/*
 !media/illustrations/.gitkeep
+
+# --- 本地测试文件 ---
+test/
+novels/

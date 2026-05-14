@@ -52,8 +52,8 @@ def index(request):
         recommended_books = []
     else:
         book_list = Book.objects.all().order_by('-recos')
-        # 推荐书籍取用逻辑：取前四本推荐书籍，若不满四本则从其他书籍中随机抽取，尽可能填满4本
-        recommended_books = get_recommend_books(list(book_list))
+        # 取前 100 本作为推荐候选池，避免全量加载到内存
+        recommended_books = get_recommend_books(list(book_list[:100]))
         is_search = False
 
     paginator = Paginator(book_list, 20)
@@ -76,7 +76,7 @@ def library(request):
     """
     tags = Tag.objects.all()
     book_groups = BookGroup.objects.all()
-    books = Book.objects.all()
+    books = Book.objects.prefetch_related('tags').all()
 
     query = request.GET.get('q', '').strip()
     tags_param = request.GET.get('tags', '').strip()
@@ -161,10 +161,13 @@ def book_detail(request, book_id):
             volumes[vol_name] = []
         volumes[vol_name].append(chapter)
 
+    # 一次性查询所有插图，按 volume_name 建 set，避免 N+1
+    illustration_volumes = set(
+        Illustration.objects.filter(book=book).values_list('volume_name', flat=True).distinct()
+    )
+
     for volume_name, chapter_list in volumes.items():
-        # 检查插图
-        has_illustration = (query in f"{volume_name} 插图") and Illustration.objects.filter(book=book,
-                                                                                            volume_name=volume_name).exists()
+        has_illustration = (query in f"{volume_name} 插图") and volume_name in illustration_volumes
         grouped_chapters.append({
             'volume_name': volume_name,
             'chapters': chapter_list,
@@ -335,7 +338,7 @@ def read_chapter(request, chapter_id):
     处理阅读页面请求。
     功能：获取当前正文、下一章、上一章信息；保存阅读进度。
     """
-    chapter = get_object_or_404(Chapter, pk=chapter_id)
+    chapter = get_object_or_404(Chapter.objects.select_related('book'), pk=chapter_id)
     book = chapter.book
 
     # 保存进度 (仅登录时)
@@ -455,7 +458,7 @@ def my_bookshelf(request):
 
     # 获取用户书架记录
     shelf_items = Bookshelf.objects.filter(user=request.user).select_related('book').order_by('-added_at')
-    mark_items = Bookmark.objects.filter(user=request.user).select_related('chapter').order_by('-added_at')
+    mark_items = Bookmark.objects.filter(user=request.user).select_related('chapter__book').order_by('-added_at')
 
     if query:
         shelf_q = SearchService.build_search_query(

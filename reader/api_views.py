@@ -36,7 +36,7 @@ class BookManageViewSet(viewsets.ModelViewSet):
     书籍管理接口，提供书籍的增删改查。
     普通管理员只能操作自己上传的书籍，超级管理员可操作所有。
     """
-    queryset = Book.objects.all()
+    queryset = Book.objects.prefetch_related('tags').all()
     serializer_class = BookSerializer
     permission_classes = [IsAuthenticated, IsAdminUser, IsUploaderOrSuperUser]
 
@@ -72,7 +72,11 @@ class BookManageViewSet(viewsets.ModelViewSet):
         description="修改书籍标题、简介或封面。仅限上传者或超管。"
     )
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
     @extend_schema(
         summary="删除书籍",
@@ -162,8 +166,12 @@ class ChapterManageViewSet(viewsets.ModelViewSet):
 
     @extend_schema(summary="修改章节内容")
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-  
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
     @extend_schema(summary="删除章节")
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
@@ -239,9 +247,9 @@ class BookGroupManageViewSet(viewsets.ModelViewSet):
     书单管理接口，提供书单的增删改查。
     普通管理员只能操作自己创建的书单，超级管理员可操作所有书单。
     """
-    queryset = BookGroup.objects.all()
+    queryset = BookGroup.objects.prefetch_related('books').all()
     serializer_class = BookGroupSerializer
-    
+
     permission_classes = [IsAuthenticated, IsAdminUser, IsUploaderOrSuperUser]
 
     parser_classes = (MultiPartParser, FormParser, JSONParser)
@@ -275,15 +283,19 @@ class BookGroupManageViewSet(viewsets.ModelViewSet):
         description="修改书单名称、简介或包含的书籍（传入 book_ids 会全量覆盖原有的书籍列表）。仅限创建者或超管。"
     )
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-    
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
     @extend_schema(
         summary="删除书单",
         description="删除指定书单，不会删除书单内的具体书籍。仅限创建者或超管。"
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
-    
+
     def perform_create(self, serializer):
         # 保存时，自动将当前登录的 Admin 用户设为书单的创建者(uploader)
         serializer.save(uploader=self.request.user)
